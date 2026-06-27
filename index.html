@@ -1154,7 +1154,8 @@
       <div class="topbar-actions">
         <button class="btn btn-secondary btn-sm" onclick="loadAll()"><i class="fa fa-rotate"></i> Refresh</button>
         <button class="icon-btn" onclick="showToast('Data refreshing...','info')"><i class="fa fa-bell"></i></button>
-        <button class="icon-btn" id="pwa-install-btn" onclick="installPWA()" style="display:none" title="App Install karo"><i class="fa fa-download"></i></button>
+        <button class="icon-btn" id="pwa-install-btn" onclick="installPWA()" style="display:none"
+          title="App Install karo"><i class="fa fa-download"></i></button>
       </div>
     </div>
 
@@ -2555,7 +2556,7 @@
       });
     }
 
-    // Install prompt (Android Chrome)
+    // Install prompt
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', function (e) {
       e.preventDefault();
@@ -2564,11 +2565,31 @@
       if (installBtn) installBtn.style.display = 'flex';
     });
 
+    // Agar prompt nahi aaya toh bhi button dikhao (manual Add to Home Screen)
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        const installBtn = document.getElementById('pwa-install-btn');
+        if (installBtn && !window.matchMedia('(display-mode: standalone)').matches) {
+          installBtn.style.display = 'flex';
+        }
+      }, 2000);
+    });
+
     function installPWA() {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(function () { deferredPrompt = null; });
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function () { deferredPrompt = null; });
+      } else {
+        // Manual instruction dikhao
+        showToast('3 dots → "Add to Home screen" tap karo ✅', 'info');
+      }
     }
+
+    window.addEventListener('appinstalled', function () {
+      const installBtn = document.getElementById('pwa-install-btn');
+      if (installBtn) installBtn.style.display = 'none';
+      showToast('App install ho gayi! 🎉', 'success');
+    });
 
   </script>
 </body>

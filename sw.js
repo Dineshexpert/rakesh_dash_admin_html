@@ -3,10 +3,14 @@
 // Push notifications handle karta hai
 // =============================================
 
-const CACHE_NAME = 'rk-admin-v2';
+// =============================================
+// VERSION YAHAN BADHAO JAB BHI index.html UPDATE KARO
+// v3 = cache-busting fix applied
+// =============================================
+const CACHE_NAME = 'rk-admin-v3';
 const STATIC_ASSETS = [
-  './',
-  './index.html'
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 // ---- Install ----
@@ -15,7 +19,7 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
   );
   self.skipWaiting();
-  console.log('[SW] Installed');
+  console.log('[SW] Installed v3');
 });
 
 // ---- Activate ----
@@ -26,30 +30,72 @@ self.addEventListener('activate', event => {
     )
   );
   self.clients.claim();
-  console.log('[SW] Activated');
+  console.log('[SW] Activated v3 - old caches cleared');
 });
 
-// ---- Fetch (cache strategy) ----
+// ---- Fetch (NETWORK-FIRST strategy) ----
+// index.html ke liye hamesha network se fresh version lo
+// Sirf icons/images ko cache karo
 self.addEventListener('fetch', event => {
   const url = event.request.url;
 
-  // Google APIs aur external URLs ko cache mat karo
+  // External APIs — SW handle nahi karega (pass-through)
   if (
     url.includes('script.google.com') ||
     url.includes('googleapis.com') ||
     url.includes('fonts.googleapis.com') ||
     url.includes('cdnjs.cloudflare.com') ||
     url.includes('onrender.com') ||
-    url.includes('api.telegram.org')
+    url.includes('api.telegram.org') ||
+    url.includes('raw.githubusercontent.com')
   ) {
+    return; // Pass-through — no caching
+  }
+
+  // HTML files — HAMESHA network se lo (cache-first nahi)
+  if (
+    event.request.mode === 'navigate' ||
+    url.endsWith('.html') ||
+    url.endsWith('/') ||
+    url.includes('index.html')
+  ) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Fresh response cache mein bhi update karo (next offline ke liye)
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseClone);
+          });
+          return response;
+        })
+        .catch(() => {
+          // Network fail — tab cached version do (offline fallback)
+          return caches.match('./index.html') || caches.match(event.request);
+        })
+    );
     return;
   }
 
+  // Icons/images — cache-first (ye rarely change hote hain)
   event.respondWith(
     caches.match(event.request).then(cached => {
-      return cached || fetch(event.request).catch(() => caches.match('./index.html'));
-    })
+      return cached || fetch(event.request).then(response => {
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+        return response;
+      });
+    }).catch(() => caches.match('./index.html'))
   );
+});
+
+// =============================================
+// INDEX.HTML SE SKIP_WAITING MESSAGE
+// =============================================
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // =============================================

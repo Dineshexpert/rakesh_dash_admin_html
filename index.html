@@ -2557,8 +2557,34 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
         navigator.serviceWorker.register('./sw.js')
-          .then(function (reg) { console.log('SW registered:', reg.scope); })
+          .then(function (reg) {
+            console.log('SW registered:', reg.scope);
+            // Naya SW available hone pe turant activate karo (page reload nahi chahiye)
+            reg.addEventListener('updatefound', function () {
+              const newWorker = reg.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', function () {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('[SW] Naya version available — activating...');
+                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  }
+                });
+              }
+            });
+            // SW update check karo (GitHub pe naya version push hone pe)
+            reg.update();
+          })
           .catch(function (err) { console.log('SW error:', err); });
+
+        // Naya SW activate hone pe page refresh karo (sirf ek baar)
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (!refreshing) {
+            refreshing = true;
+            console.log('[SW] Controller changed — reloading for fresh content');
+            window.location.reload();
+          }
+        });
       });
     }
 

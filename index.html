@@ -3558,7 +3558,7 @@
     // =============================================
     // CONFIG
     // =============================================
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyQWN8O8DXExNeiNwQ6vGt4N6VTfW7lVWQ5I3SxwDllkXUJaHtJ_AN2XtM1K5gi4Rzwow/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwMwAfmRwU3wsOvcuSJyg2TMC1LF2CvXE005Q0h6-A1KbrQqcu9uVU46HzHQpkdq5zI/exec";
 
     let allOrders = [];
     let allCustomers = [];
@@ -5174,7 +5174,15 @@
       loadCustomerPhotos();
       loadChatLastSeen();
       loadLocationSetting();
-      loadDashboard().then(function () { window._bgInitDone = true; });
+      loadDashboard().then(function () {
+        window._bgInitDone = true;
+        // Notification click se ?nav=orders ke saath khula ho to Orders page pe le jao
+        const navTarget = new URLSearchParams(location.search).get('nav');
+        if (navTarget) {
+          showPage(navTarget);
+          history.replaceState({}, '', location.pathname); // URL clean kar do
+        }
+      });
       backgroundChatCheck();
       chatBgTimer = setInterval(backgroundChatCheck, 25000);
       setInterval(backgroundRefreshAll, 20000);
@@ -5557,11 +5565,21 @@
           });
         }
 
-        // Subscription server pe save karo
+        // Pehle GAS se ek short-lived one-time token lo (admin session se gated)
+        const tokRes = await fetch(SCRIPT_URL + '?action=adminGetPushRegToken&adminToken=' + encodeURIComponent(adminToken));
+        const tokData = await tokRes.json();
+        if (!tokData || !tokData.success || !tokData.regToken) {
+          showToast('Push registration token nahi mila — dobara try karo', 'error');
+          return false;
+        }
+
+        // Subscription server pe save karo (regToken ke saath — AUTH_KEY frontend mein kabhi nahi aati)
+        const subPayload = JSON.parse(JSON.stringify(subscription));
+        subPayload.regToken = tokData.regToken;
         const res = await fetch(PUSH_SERVER_URL + '/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(subscription)
+          body: JSON.stringify(subPayload)
         });
         const result = await res.json();
 

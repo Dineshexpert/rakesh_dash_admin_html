@@ -7,7 +7,7 @@
 // VERSION YAHAN BADHAO JAB BHI index.html UPDATE KARO
 // v3 = cache-busting fix applied
 // =============================================
-const CACHE_NAME = 'rk-admin-v3';
+const CACHE_NAME = 'rk-admin-v4';
 const STATIC_ASSETS = [
   './icon-192.png',
   './icon-512.png'
@@ -175,8 +175,8 @@ self.addEventListener('notificationclick', event => {
           return;
         }
       }
-      // Nahi khuli toh naya window kholo
-      return clients.openWindow('./index.html');
+      // Nahi khuli toh naya window kholo — ?nav=orders query se cold-start navigation
+      return clients.openWindow('./index.html?nav=orders');
     })
   );
 });
@@ -199,4 +199,18 @@ self.addEventListener('pushsubscriptionchange', event => {
       });
     })
   );
+});
+
+// =============================================
+// NOTIFICATION CLOSE (dismiss track karne ke liye — optional analytics)
+// =============================================
+self.addEventListener('notificationclose', event => {
+  console.log('[SW] Notification dismissed without click:', event.notification.data);
+});
+
+// =============================================
+// PUSH EVENT ERROR SAFETY — agar showNotification hi fail ho jaaye
+// =============================================
+self.addEventListener('error', event => {
+  console.error('[SW] Uncaught error:', event.message);
 });

@@ -2251,6 +2251,9 @@
         <i class="fa fa-comments"></i> Chat
         <span class="nav-badge" id="nav-chat-badge" style="display:none">0</span>
       </div>
+      <div class="nav-item" onclick="showPage('rider')" id="nav-rider">
+        <i class="fa fa-motorcycle"></i> Rider Control
+      </div>
       <div class="nav-item" onclick="toggleSettingsMenu()" id="nav-settings">
         <i class="fa fa-gear"></i> Settings
         <i class="fa fa-chevron-down" id="settings-chevron"
@@ -2424,8 +2427,10 @@
                 <option value="">All Status</option>
                 <option>Processing</option>
                 <option>Confirmed</option>
+                <option>Packed</option>
                 <option>Shipped</option>
                 <option>Out for Delivery</option>
+                <option>Ready for Handover</option>
                 <option>Delivered</option>
                 <option>Cancelled</option>
               </select>
@@ -3197,6 +3202,284 @@
       </div>
 
       <!-- ====== SETTINGS PAGE ====== -->
+      <div class="page" id="page-rider">
+        <style>
+          .rc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.8rem;padding:1rem}
+          .rc-tg{display:flex;gap:.6rem;align-items:flex-start;padding:.6rem .7rem;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);cursor:pointer}
+          .rc-tg input{margin-top:.3rem;width:auto}.rc-tg span{display:flex;flex-direction:column;font-size:.82rem}
+          .rc-tg small,.rc-h{color:var(--muted);font-size:.68rem;font-weight:500}
+          #page-rider .section-card{margin-bottom:.7rem}
+          #page-rider .section-head{cursor:pointer;user-select:none;gap:.6rem}
+          #page-rider .section-card:not(.rc-open)>:not(.section-head){display:none}
+          #page-rider .rc-chev{margin-left:auto;font-size:.8rem;color:var(--muted);transition:transform .25s}
+          #page-rider .section-card.rc-open .rc-chev{transform:rotate(180deg)}
+          #page-rider .section-card.rc-open{border-color:var(--accent)}
+          .rc-savebar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.6rem .9rem;margin-bottom:.7rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm)}
+          .rc-savebar small{color:var(--muted);font-size:.72rem}
+          #rc-filter-btn{margin-left:auto}#rc-filter-btn+.rc-chev{margin-left:.3rem!important}
+          .ord-acts .btn{white-space:nowrap;flex-shrink:0}
+          .rc-chips{display:flex;gap:.4rem;flex-wrap:wrap;padding:.9rem 1rem .3rem}
+          .rc-chip{padding:.35rem .8rem;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:inherit;font-size:.78rem;font-weight:700;cursor:pointer}
+          .rc-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+          .rc-list{display:flex;flex-direction:column;gap:.7rem;padding:.7rem 1rem 1rem}
+          .rc-rcard{border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);padding:.8rem}
+          .rc-top{display:flex;align-items:center;gap:.7rem}
+          .rc-av{width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--border);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.2rem;color:var(--accent)}
+          .rc-info{flex:1;min-width:0}.rc-info b{display:block;font-size:.95rem}.rc-info small{color:var(--muted);font-size:.72rem}
+          .rc-pill{font-size:.7rem;font-weight:800;padding:.2rem .6rem;border-radius:20px;border:1px solid currentColor;white-space:nowrap}
+          .rc-meta{display:flex;gap:.9rem;flex-wrap:wrap;margin:.6rem 0;font-size:.76rem;color:var(--muted)}.rc-meta b{color:var(--text)}
+          .rc-prof-head{display:flex;align-items:center;gap:.9rem;padding:1rem}.rc-prof-head .rc-av{width:76px;height:76px;font-size:1.8rem}
+          .rc-tbl{width:100%;font-size:.84rem;border-collapse:collapse}.rc-tbl td{padding:.5rem 1rem;border-top:1px solid var(--border);vertical-align:top}.rc-tbl td:first-child{color:var(--muted);width:40%}.rc-tbl td:last-child{font-weight:700;word-break:break-word}
+          .rk-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;padding:.9rem 1rem 0}
+          .rk-stat{border:1px solid var(--border);border-radius:12px;padding:.6rem .5rem;text-align:center;background:var(--surface2)}
+          .rk-stat b{display:block;font-size:1.25rem;line-height:1.2}.rk-stat span{font-size:.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+          .rk-toolbar{display:flex;gap:.55rem;padding:.8rem 1rem .2rem;align-items:stretch}
+          #page-rider .rk-search{flex:1;min-width:0;display:flex;align-items:center;gap:.55rem;padding:0 .8rem;height:46px;border:1.5px solid var(--border);border-radius:14px;background:var(--surface2);transition:.2s}
+          #page-rider .rk-search:focus-within{border-color:var(--accent);background:#fff;box-shadow:0 0 0 4px rgba(240,81,26,.12)}
+          #page-rider .rk-search>i{color:var(--muted);font-size:.9rem}
+          #page-rider .rk-search input{flex:1;min-width:0;width:100%;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;padding:0!important;margin:0;font-size:16px;color:var(--text);height:100%}
+          #page-rider .rk-search button{border:0;background:var(--border);color:var(--muted);width:22px;height:22px;border-radius:50%;font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+          .rk-filter{display:flex;align-items:center;gap:.45rem;padding:0 .9rem;height:46px;border-radius:14px;border:1.5px solid var(--accent);background:var(--accent);color:#fff;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer;white-space:nowrap}
+          .rk-filter .rk-fc{font-size:.65rem;opacity:.85}
+          .rk-menu{margin:.5rem 1rem 0;border:1px solid var(--border);border-radius:14px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.1);overflow:hidden}
+          .rk-opt{display:flex;align-items:center;justify-content:space-between;gap:.6rem;width:100%;padding:.75rem 1rem;border:0;border-bottom:1px solid var(--border);background:transparent;color:var(--text);font:inherit;font-size:.88rem;font-weight:600;text-align:left;cursor:pointer}
+          .rk-opt:last-child{border-bottom:0}.rk-opt.on{background:rgba(240,81,26,.08);color:var(--accent);font-weight:800}
+          .rk-opt small{color:var(--muted);font-weight:700;margin-left:auto}.rk-opt i{width:14px;font-size:.8rem}
+          .rk-note{padding:.5rem 1rem 0;font-size:.7rem;color:var(--muted)}
+          .rk-card{border:1px solid var(--border);border-radius:16px;background:#fff;padding:.9rem;box-shadow:0 2px 10px rgba(20,30,60,.05)}
+          .rk-row{display:flex;align-items:center;gap:.8rem}
+          .rk-avwrap{position:relative;flex-shrink:0}.rk-avwrap .rc-av{width:58px;height:58px;border:2px solid var(--border)}
+          .rk-dot{position:absolute;right:1px;bottom:1px;width:15px;height:15px;border-radius:50%;border:2.5px solid #fff}
+          .rk-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:.1rem}.rk-main b{font-size:1rem;line-height:1.25}
+          .rk-sub{font-size:.73rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rk-sub i{margin-right:.25rem;font-size:.68rem}
+          .rk-side{display:flex;flex-direction:column;align-items:flex-end;gap:.35rem}
+          .rk-badge{font-size:.66rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:.22rem .6rem;border-radius:20px}
+          .rk-live{font-size:.72rem;font-weight:800}
+          .rk-grid{display:grid;grid-template-columns:repeat(3,1fr);margin:.8rem 0;border:1px solid var(--border);border-radius:12px;background:var(--surface2)}
+          .rk-grid div{padding:.55rem .3rem;text-align:center;border-left:1px solid var(--border)}.rk-grid div:first-child{border-left:0}
+          .rk-grid b{display:block;font-size:.95rem}.rk-grid span{font-size:.64rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+          .rk-btn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;padding:.7rem;border-radius:12px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font:inherit;font-size:.85rem;font-weight:800;cursor:pointer}
+          .rk-sel{appearance:none;-webkit-appearance:none;margin-left:auto;padding:.5rem 2rem .5rem .95rem;border-radius:20px;border:1.5px solid var(--accent);color:var(--accent);font:inherit;font-size:.78rem;font-weight:800;cursor:pointer;background:rgba(240,81,26,.07) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23F0511A' stroke-width='1.8' stroke-linecap='round'/></svg>") no-repeat right .8rem center;outline:0}
+          .rk-btn.fill{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(240,81,26,.25)}.rk-btn[disabled]{opacity:.45;box-shadow:none}
+          .rcc-amt{font-size:1.15rem;font-weight:800;line-height:1.1}
+          .rcc-tag{font-size:.62rem;font-weight:800;color:#d32f2f;background:rgba(211,47,47,.12);padding:.15rem .5rem;border-radius:20px;text-transform:uppercase}
+          .rcc-row{display:flex;justify-content:space-between;align-items:center;gap:.8rem;padding:.7rem 1rem;border-top:1px solid var(--border);font-size:.84rem}
+          .rcc-row small{display:block;color:var(--muted);font-size:.7rem}.rcc-row b{white-space:nowrap}
+          .rk-pick{display:flex;align-items:center;gap:.75rem;width:100%;padding:.65rem .8rem;border:1.5px solid var(--border);border-radius:14px;background:#fff;font:inherit;color:var(--text);text-align:left;cursor:pointer}
+          .rk-pick.on{border-color:var(--accent);background:rgba(240,81,26,.07)}.rk-pick .rc-av{width:48px;height:48px;flex-shrink:0}
+          .rk-pick .rk-main b{font-size:.92rem}.rk-pick .rc-pill{font-size:.64rem;padding:.12rem .5rem}
+          .rk-approve-card{margin-bottom:1rem;border-color:var(--success)}
+          .rk-approve{display:flex;align-items:center;justify-content:center;gap:.6rem;width:100%;height:52px;border:0;border-radius:14px;background:var(--success);color:#fff;font:inherit;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 6px 16px rgba(30,138,87,.3)}
+          .rk-approve:active{transform:scale(.98)}
+          .rk-approve-card{overflow:visible}
+          .btn-warn{background:rgba(255,140,0,.15);color:#e67e00;border:1px solid rgba(255,140,0,.3)}
+          .rk-split{position:relative;display:flex;width:100%;height:52px}
+          .rk-split button{border:0;color:#fff;font:inherit;font-weight:800;cursor:pointer}
+          .rk-split-main{flex:1;display:flex;align-items:center;justify-content:center;gap:.6rem;font-size:1rem;border-radius:14px 0 0 14px}
+          .rk-split-arrow{width:56px;border-radius:0 14px 14px 0;border-left:1px solid rgba(255,255,255,.4)!important}
+          .rk-c-approve{background:var(--success)}
+          .rk-c-reject{background:#f59e0b}
+          .rk-c-block{background:var(--danger)}
+          .rk-split-menu{display:none;position:absolute;right:0;bottom:calc(100% + 8px);min-width:190px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.18);padding:.35rem;z-index:20}
+          .rk-split-menu.open{display:block}
+          .rk-split-menu button{display:flex;width:100%;align-items:center;gap:.6rem;padding:.65rem .8rem;border-radius:8px;background:transparent;font-size:.9rem}
+          .rk-split-menu button:hover{background:rgba(0,0,0,.05)}
+          .rk-split-menu .rk-m-approved{color:var(--success)}
+          .rk-split-menu .rk-m-rejected{color:#d97706}
+          .rk-split-menu .rk-m-blocked{color:var(--danger)}
+          .rk-btn:active{background:var(--accent);color:#fff}
+          .rc-body{padding:1rem}.rc-acts{display:flex;gap:.3rem;flex-wrap:wrap}
+        </style>
+        <div class="section-card rc-open">
+          <div class="section-head"><h3><i class="fa fa-people-group"></i> 1. All Riders <small id="rc-count" style="color:var(--muted);font-weight:600"></small></h3></div>
+          <div class="rk-stats" id="rk-stats"></div>
+          <div class="rk-toolbar">
+            <div class="rk-search"><i class="fa fa-magnifying-glass"></i>
+              <input type="text" id="rc-search" placeholder="Naam, mobile ya ID se search karein" oninput="rcApplyFilter()" autocomplete="off">
+              <button type="button" id="rk-clear" onclick="rcClearSearch()" style="display:none" aria-label="Clear"><i class="fa fa-xmark"></i></button></div>
+            <button type="button" class="rk-filter" id="rc-filter-btn" onclick="rcFilterPanel()"><i class="fa fa-filter"></i><span id="rc-filter-label">New</span><i class="fa fa-chevron-down rk-fc"></i></button>
+          </div>
+          <div class="rk-menu" id="rc-chips" style="display:none"></div>
+          <div id="rc-demo-note" class="rk-note"></div>
+          <div class="rc-list" id="rider-cards"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-clipboard-check"></i> 1B. Order Requests <small id="rn-count" style="color:var(--muted);font-weight:600"></small></h3>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="rnLoad(true)"><i class="fa fa-rotate"></i></button></div>
+          <div class="rn-stats" id="rn-stats"></div>
+          <div class="rn-chips" id="rn-chips"></div>
+          <div class="rc-list" id="rn-list" style="padding:.8rem 1rem 1rem"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-hand-holding-dollar"></i> 2. COD Cash Pending <small id="rcc-count" style="color:var(--muted);font-weight:600"></small></h3></div>
+          <div class="rk-stats" id="rcc-stats"></div>
+          <div class="rk-toolbar">
+            <div class="rk-search"><i class="fa fa-magnifying-glass"></i>
+              <input type="text" id="rcc-search" placeholder="Rider naam, mobile ya ID search karein" oninput="rccApply()" autocomplete="off">
+              <button type="button" id="rcc-clear" onclick="document.getElementById('rcc-search').value='';rccApply()" style="display:none" aria-label="Clear"><i class="fa fa-xmark"></i></button></div>
+            <button type="button" class="rk-filter" onclick="rccFilterPanel()"><i class="fa fa-filter"></i><span id="rcc-filter-label">Most Pending</span><i class="fa fa-chevron-down rk-fc"></i></button>
+          </div>
+          <div class="rk-menu" id="rcc-menu" style="display:none"></div>
+          <div class="rc-list" id="rcc-list"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-sack-dollar"></i> 3. Rider Earnings <small id="rce-count" style="color:var(--muted);font-weight:600"></small></h3></div>
+          <div class="rk-stats" id="rce-stats"></div>
+          <div class="rk-toolbar">
+            <div class="rk-search"><i class="fa fa-magnifying-glass"></i>
+              <input type="text" id="rce-search" placeholder="Rider naam, mobile ya ID search karein" oninput="rceApply()" autocomplete="off">
+              <button type="button" id="rce-clear" onclick="document.getElementById('rce-search').value='';rceApply()" style="display:none" aria-label="Clear"><i class="fa fa-xmark"></i></button></div>
+            <button type="button" class="rk-filter" onclick="rceFilterPanel()"><i class="fa fa-filter"></i><span id="rce-filter-label">Most Earning</span><i class="fa fa-chevron-down rk-fc"></i></button>
+          </div>
+          <div class="rk-menu" id="rce-menu" style="display:none"></div>
+          <div class="rc-list" id="rce-list"></div>
+        </div>
+        <div class="rc-savebar">
+          <small>Section 4 se 8 ki settings badalne ke baad Save dabayein</small>
+          <button class="btn btn-primary btn-sm" onclick="saveRiderSettings()"><i class="fa fa-save"></i> Save</button>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-indian-rupee-sign"></i> 4. Earning Rules (Rider ki kamai)</h3></div>
+          <div class="rc-grid">
+            <div class="form-group"><label>Earning % of order total</label><input type="number" min="0" step="any" id="rc-pct" value="4"><small class="rc-h">Order total ka kitna % rider ko</small></div>
+            <div class="form-group"><label>Minimum per order (₹)</label><input type="number" min="0" step="any" id="rc-min" value="7"><small class="rc-h">Chhote order par bhi itna milega (₹10 order = ₹7)</small></div>
+            <div class="form-group"><label>Maximum per order (₹)</label><input type="number" min="0" step="any" id="rc-cap" value="0"><small class="rc-h">0 = koi limit nahi</small></div>
+            <div class="form-group"><label>Extra per km (₹)</label><input type="number" min="0" step="any" id="rc-perkm" value="0"><small class="rc-h">0 = band</small></div>
+            <div class="form-group"><label>Daily bonus: deliveries</label><input type="number" min="0" step="any" id="rc-bonus-n" value="0"><small class="rc-h">Itni deliveries par bonus (0 = band)</small></div>
+            <div class="form-group"><label>Daily bonus amount (₹)</label><input type="number" min="0" step="any" id="rc-bonus-amt" value="0"><small class="rc-h">Target poora hone par</small></div>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-route"></i> 5. Order Request Rules</h3></div>
+          <div class="rc-grid">
+            <div class="form-group"><label>Accept karne ka time (sec)</label><input type="number" min="0" step="any" id="rc-timeout" value="60"><small class="rc-h">Itne sec baad request expire</small></div>
+            <div class="form-group"><label>Max delivery distance (km)</label><input type="number" min="0" step="any" id="rc-maxkm" value="0"><small class="rc-h">0 = koi limit nahi</small></div>
+            <div class="form-group"><label>Ek rider ke max active orders</label><input type="number" min="0" step="any" id="rc-maxactive" value="1"><small class="rc-h"></small></div>
+            <div class="form-group"><label>Order assign mode</label><select id="rc-mode"><option value="broadcast">Sab online riders ko bhejo</option><option value="manual">Sirf admin manually assign kare</option></select></div>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-wallet"></i> 6. COD Limit Settings</h3></div>
+          <div class="rc-grid">
+            <div class="form-group"><label>Max pending cash per rider (₹)</label><input type="number" min="0" step="any" id="rc-codlimit" value="0"><small class="rc-h">0 = limit nahi</small></div>
+            <label class="rc-tg"><input type="checkbox" id="rc-autoblock"><span><b>Limit cross par orders band</b><small>Cash jama hone tak naye orders nahi</small></span></label>
+            <label class="rc-tg"><input type="checkbox" id="rc-codallow" checked><span><b>COD orders rider ko do</b><small>Band karne par sirf Prepaid orders aayenge</small></span></label>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-toggle-on"></i> 7. Rider App Switches</h3></div>
+          <div class="rc-grid">
+            <label class="rc-tg"><input type="checkbox" id="rc-appon" checked><span><b>Rider app chalu</b><small>Band karne par rider orders nahi le payenge</small></span></label>
+            <label class="rc-tg"><input type="checkbox" id="rc-regopen" checked><span><b>Naye rider registration open</b><small>Band = nayi registration nahi</small></span></label>
+            <label class="rc-tg"><input type="checkbox" id="rc-otp" checked><span><b>Delivery OTP zaroori</b><small>Customer OTP bina delivery complete nahi</small></span></label>
+            <label class="rc-tg"><input type="checkbox" id="rc-allowrej" checked><span><b>Rider order reject kar sake</b><small>Band = reject button hide</small></span></label>
+            <label class="rc-tg"><input type="checkbox" id="rc-showcall" checked><span><b>Call customer button</b><small>Rider ko customer ka number dikhe</small></span></label>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-bullhorn"></i> 8. Rules, Support &amp; Announcement</h3></div>
+          <div class="rc-body">
+            <div class="form-group"><label>Delivery Partner Rules (har line = ek rule, registration me dikhenge)</label><textarea id="rc-rules" rows="6">Customer se respectful behaviour
+Order safely handle karna
+Customer ki privacy maintain karna
+Cash/payment mein honesty
+Fake delivery confirmation nahi
+Customer information share nahi karna
+Unsafe driving nahi
+Rakesh Mart ke delivery guidelines follow karna</textarea></div>
+            <div class="form-group"><label>Store support number</label><input type="text" id="rc-phone" value="+917410974578"></div>
+            <div class="form-group"><label>Riders ke liye message (Notification me dikhega)</label><textarea id="rc-announce" rows="2" placeholder="e.g. Aaj baarish hai, dhyan se chalayein"></textarea></div>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-users-gear"></i> 9. Riders (Approve / Block / Payout / Message)</h3>
+            <div class="rc-acts">
+              <button class="btn btn-secondary btn-sm" onclick="riderMessage('')"><i class="fa fa-paper-plane"></i> Sabko Message</button>
+              <button class="btn btn-secondary btn-sm" onclick="loadRiderPage()"><i class="fa fa-rotate"></i></button>
+            </div></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Partner ID</th><th>Name / Mobile</th><th>Vehicle</th><th>Approval</th><th>Live</th><th>Deliveries</th><th>Earnings (Unpaid)</th><th>Cash pending</th><th>Action</th></tr></thead>
+            <tbody id="rider-body"><tr class="loading-row"><td colspan="9">Loading...</td></tr></tbody>
+          </table></div>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-triangle-exclamation"></i> 10. Rider Issues (Report an issue)</h3>
+            <button class="btn btn-secondary btn-sm" onclick="loadRiderIssues()"><i class="fa fa-rotate"></i></button></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Time</th><th>Rider</th><th>Order</th><th>Issue</th><th>Action</th></tr></thead>
+            <tbody id="rider-issues-body"><tr class="loading-row"><td colspan="5">Loading...</td></tr></tbody>
+          </table></div>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-chart-column"></i> 11. Rider-wise Report</h3>
+            <div class="filter-row">
+              <input type="date" id="rr-from"><input type="date" id="rr-to">
+              <button class="btn btn-primary btn-sm" onclick="loadRiderReport()"><i class="fa fa-magnifying-glass"></i> Report</button>
+            </div></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Rider</th><th>Deliveries</th><th>Earnings</th><th>Rejected</th><th>Distance (km)</th></tr></thead>
+            <tbody id="rider-report-body"><tr class="loading-row"><td colspan="5">Date chunke Report dabayein</td></tr></tbody>
+          </table></div>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-star"></i> 12. Customer Rating &amp; Reward</h3></div>
+          <div class="rc-grid">
+            <label class="rc-tg"><input type="checkbox" id="rt-enabled" checked><span><b>Customer rating &amp; reward chalu</b><small>Band = rating popup nahi aayega, reward nahi milega</small></span></label>
+            <div class="form-group"><label>🏆 5-Star Partner reward (₹)</label><input type="number" min="0" step="any" id="rt-r5" value="500"><small class="rc-h">Is mahine ka reward — har mahine yahin se badlein</small></div>
+            <div class="form-group"><label>🥇 4-Star Partner reward (₹)</label><input type="number" min="0" step="any" id="rt-r4" value="300"></div>
+            <div class="form-group"><label>🥈 3-Star Partner reward (₹)</label><input type="number" min="0" step="any" id="rt-r3" value="100"></div>
+            <div class="form-group"><label>2 Star ya usse kam</label><input type="text" value="₹0 (fixed)" disabled><small class="rc-h">Isse niche koi reward nahi</small></div>
+            <div class="form-group"><label>Reward ke liye min deliveries / mahina</label><input type="number" min="0" step="1" id="rt-mindel" value="30"><small class="rc-h">Isse kam deliveries = reward nahi</small></div>
+            <div class="form-group"><label>Min customer ratings / mahina</label><input type="number" min="1" step="1" id="rt-minrat" value="5"><small class="rc-h">Ek customer ki single rating se reward decide nahi hoga</small></div>
+            <div class="form-group"><label>Average ko whole star kaise banayein</label><select id="rt-round"><option value="round">Nearest (4.5 ya upar = 5 star)</option><option value="floor">Neeche wala (4.9 = 4 star)</option></select></div>
+            <div class="form-group"><label>Reward ka naam / mahina (rider ko dikhega)</label><input type="text" id="rt-label" placeholder="e.g. October 2026 Reward"></div>
+            <label class="rc-tg"><input type="checkbox" id="rt-tip-enabled" checked><span><b>Tip option chalu</b><small>Rating ke baad customer ko optional tip ka option dikhega</small></span></label>
+            <div class="form-group"><label>Tip ke quick amounts (₹, comma se alag)</label><input type="text" id="rt-tip-presets" value="10, 20, 30, 50, 100" placeholder="10, 20, 30, 50, 100"><small class="rc-h">Max 6 amounts. Customer apni marzi ka custom amount bhi de sakta hai</small></div>
+          </div>
+          <div style="padding:0 1rem 1rem"><button class="btn btn-primary btn-sm" onclick="saveRatingSettings()"><i class="fa fa-save"></i> Rating Settings Save</button>
+            <small class="rc-h" style="display:block;margin-top:.5rem">Rider ki galti na hone wali situations (customer unavailable, wrong address, shop delay, traffic) behaviour rating me count nahi hoti — niche Section 13 me "Count mat karo" se hata sakte hain. "Delivery Problem" / "Other" reason wali ratings apne aap exclude hoti hain.</small></div>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-ranking-star"></i> 13. Rider Ratings &amp; Rewards</h3>
+            <div class="filter-row">
+              <input type="month" id="rt-month">
+              <button class="btn btn-primary btn-sm" onclick="loadRatingReport()"><i class="fa fa-magnifying-glass"></i> Dikhao</button>
+            </div></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Rider</th><th>Deliveries</th><th>5★</th><th>4★</th><th>3★</th><th>2★</th><th>1★</th><th>Avg</th><th>Status</th><th>Reward</th><th>Tips</th></tr></thead>
+            <tbody id="rt-summary-body"><tr class="loading-row"><td colspan="11">Mahina chunke "Dikhao" dabayein</td></tr></tbody>
+          </table></div>
+          <div style="padding:.8rem 1rem .2rem;font-weight:800;font-size:.85rem">Customer ratings (latest 50)</div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Time</th><th>Customer</th><th>Rider</th><th>Order</th><th>Stars</th><th>Reason / Tags</th><th>Review (customer ne likha)</th><th>Count?</th><th>Action</th></tr></thead>
+            <tbody id="rt-list-body"><tr class="loading-row"><td colspan="9">—</td></tr></tbody>
+          </table></div>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-hand-holding-heart"></i> 14. Customer Tips <small style="font-weight:600;color:var(--muted)">(mahina Section 13 se)</small></h3>
+            <div class="filter-row"><input type="text" id="tp-search" placeholder="Customer / Rider dhundo" oninput="rtRenderTips()"></div></div>
+          <div id="tp-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:.6rem;padding:.8rem 1rem"></div>
+          <div id="tp-body" style="padding:0 1rem 1rem"><div class="loading-row" style="padding:1rem;text-align:center;color:var(--muted)">—</div></div>
+          <small class="rc-h" style="display:block;padding:.2rem 1rem 1rem">Online tip store ke account me aati hai. Rider ko paise dene par <b>Tip Do</b> dabayein (poora ya thoda amount) &mdash; entry "Return Tips Money" sheet me jaati hai aur rider ke app me bhi dikhti hai. Cash tip customer seedha rider ko deta hai.</small>
+        </div>
+        <div class="section-card">
+          <div class="section-head"><h3><i class="fa fa-wallet"></i> 15. Rider UPI IDs (Tip ke liye)</h3></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Rider</th><th>UPI ID</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="ru-body"><tr class="loading-row"><td colspan="4">—</td></tr></tbody>
+          </table></div>
+          <small class="rc-h" style="display:block;padding:.2rem 1rem 1rem">Rider apna UPI ID app me daalta hai — ye "Pending" rehta hai. Rider se confirm karke (naam match karke) <b>Approve</b> karein; tabhi customer ki tip seedha us UPI par jayegi. Approved ID na ho to tip store ke UPI par aayegi. Aap khud bhi "Set / Badlo" se ID daal sakte hain.</small>
+        </div>
+      </div>
+
+      <div class="page" id="page-rider-earn"><div id="rce-body"></div></div>
+
+      <div class="page" id="page-rider-hist"><div id="rh-body"></div></div>
+
+      <div class="page" id="page-rider-cash"><div id="rcc-body"></div></div>
+
+      <div class="page" id="page-rider-detail"><div id="rp-body"></div></div>
+
       <div class="page" id="page-settings">
 
         <!-- LINK SETTINGS -->
@@ -3255,6 +3538,105 @@
   </main>
 
   <!-- ORDER DETAIL MODAL -->
+  <div class="modal-overlay" id="tip-detail-modal">
+    <div class="modal" style="max-height:90vh;display:flex;flex-direction:column">
+      <div class="modal-head"><h3><i class="fa fa-hand-holding-heart" style="color:var(--accent)"></i> Rider Tips Details</h3>
+        <button class="close-btn" onclick="closeModal('tip-detail-modal')"><i class="fa fa-xmark"></i></button></div>
+      <div class="modal-body" id="tp-detail-body" style="overflow:auto"></div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="tip-return-modal">
+    <div class="modal">
+      <div class="modal-head"><h3><i class="fa fa-hand-holding-dollar" style="color:var(--accent)"></i> Tip Do</h3>
+        <button class="close-btn" onclick="closeModal('tip-return-modal')"><i class="fa fa-xmark"></i></button></div>
+      <div class="modal-body">
+        <div id="tp-modal-info" style="font-size:.85rem;margin-bottom:.8rem"></div>
+        <div class="form-group"><label>Kitni tip de rahe hain (₹)</label><input type="number" min="1" step="any" id="tp-amt" inputmode="decimal"></div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="tpFull()" style="margin-bottom:.8rem">Poori baki tip do</button>
+        <div class="form-group"><label>Note (optional)</label><input type="text" id="tp-note" placeholder="e.g. Cash diya / UPI se"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="closeModal('tip-return-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="tpConfirm()"><i class="fa fa-check"></i> Tip Do</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="rider-payout-modal">
+    <div class="modal">
+      <div class="modal-head"><h3><i class="fa fa-sack-dollar" style="color:var(--accent)"></i> Payout Do</h3>
+        <button class="close-btn" onclick="closeModal('rider-payout-modal')"><i class="fa fa-xmark"></i></button></div>
+      <div class="modal-body">
+        <div id="rce-modal-info" style="font-size:.85rem;margin-bottom:.8rem"></div>
+        <div class="form-group"><label>Kitna payout de rahe hain (₹)</label><input type="number" min="1" step="any" id="rce-amt" inputmode="decimal"></div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="rceFull()" style="margin-bottom:.8rem">Poora baki do</button>
+        <div class="form-group"><label>Note (optional)</label><input type="text" id="rce-note" placeholder="e.g. Cash diya / UPI se"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="closeModal('rider-payout-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="rceConfirm()"><i class="fa fa-check"></i> Payout Do</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="rider-cash-modal">
+    <div class="modal">
+      <div class="modal-head"><h3><i class="fa fa-hand-holding-dollar" style="color:var(--accent)"></i> Cash Lo</h3>
+        <button class="close-btn" onclick="closeModal('rider-cash-modal')"><i class="fa fa-xmark"></i></button></div>
+      <div class="modal-body">
+        <div id="rcc-modal-info" style="font-size:.85rem;margin-bottom:.8rem"></div>
+        <div class="form-group"><label>Kitna cash le rahe hain (₹)</label><input type="number" min="1" step="any" id="rcc-amt" inputmode="decimal"></div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="rccFull()" style="margin-bottom:.8rem">Poora pending lo</button>
+        <div class="form-group"><label>Note (optional)</label><input type="text" id="rcc-note" placeholder="e.g. Counter par diya / UPI se"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="closeModal('rider-cash-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="rccConfirm()"><i class="fa fa-check"></i> Cash Lo</button>
+      </div>
+    </div>
+  </div>
+  <style>
+    .rp-tabs{display:flex;gap:.5rem;margin-bottom:.7rem}
+    .rp-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:.45rem;padding:.8rem .6rem;border-radius:14px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font:inherit;font-size:.85rem;font-weight:800;cursor:pointer}
+    .rp-tab.on{border-color:var(--accent);background:var(--accent);color:#fff}
+    .rn-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:.5rem;padding:.9rem 1rem 0}
+    .rn-chips{display:flex;gap:.4rem;flex-wrap:wrap;padding:.8rem 1rem 0}
+    .rn-chip{border:1.5px solid var(--border);background:#fff;color:var(--muted);border-radius:20px;padding:.4rem .8rem;font:inherit;font-size:.76rem;font-weight:800;cursor:pointer}
+    .rn-chip small{opacity:.7;margin-left:.15rem}
+    .rn-chip.on{border-color:var(--accent);background:var(--accent);color:#fff}
+    .rn-card{display:flex;flex-direction:column;gap:.28rem}
+    .rn-top{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+    .rn-pill{font-size:.68rem;font-weight:800;padding:.2rem .6rem;border-radius:20px;white-space:nowrap}
+    .rn-sub{font-size:.78rem;color:var(--muted)}
+    .rn-items{font-size:.86rem;font-weight:700}
+    .rn-meta{font-size:.8rem}
+    .rn-time{font-size:.7rem;color:var(--muted)}
+    .rn-na-flag{background:rgba(211,47,47,.1);color:#d32f2f;font-weight:800;font-size:.8rem;padding:.55rem .8rem;border-radius:10px;margin-bottom:.7rem;text-align:center}
+  </style>
+  <div class="modal-overlay" id="rn-na-modal">
+    <div class="modal">
+      <div class="modal-head"><h3><i class="fa fa-triangle-exclamation" style="color:var(--danger)"></i> Order Accept Nahi Hua <small id="rn-na-pos" style="color:var(--muted)"></small></h3>
+        <button class="close-btn" onclick="rnNaClose()"><i class="fa fa-xmark"></i></button></div>
+      <div class="modal-body" id="rn-na-body"></div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="rnNaClose()">Baad me</button>
+        <button class="btn btn-primary" onclick="rnNaAssign()"><i class="fa fa-motorcycle"></i> Assign Other</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="rider-assign-modal">
+    <div class="modal">
+      <div class="modal-head"><h3><i class="fa fa-motorcycle" style="color:var(--accent)"></i> Rider Assign Karo</h3>
+        <button class="close-btn" onclick="closeModal('rider-assign-modal')"><i class="fa fa-xmark"></i></button></div>
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom:.6rem"><label id="assign-order-label">Order</label></div>
+        <div id="assign-rider-list" style="max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:.55rem"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="closeModal('rider-assign-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmAssignRider()"><i class="fa fa-check"></i> Assign</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="order-modal">
     <div class="modal">
       <div class="modal-head">
@@ -3558,7 +3940,7 @@
     // =============================================
     // CONFIG
     // =============================================
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwMwAfmRwU3wsOvcuSJyg2TMC1LF2CvXE005Q0h6-A1KbrQqcu9uVU46HzHQpkdq5zI/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxob4N4DQHcBOxYkGvUI7y-pAP-aaM6sy3LoNU9Kvdpsx82Aket1-a7rHQy9OdIWJhY7w/exec";
 
     let allOrders = [];
     let allCustomers = [];
@@ -3862,16 +4244,1048 @@
     // =============================================
     // PAGE NAVIGATION
     // =============================================
+    // =============================================
+    // RIDER CONTROL (Rakesh Mart Rider app ke saare controls)
+    // GAS actions: getRiderSettings, saveRiderSettings, getRiders, updateRiderStatus, confirmRiderDeposit, confirmRiderPayout,
+    // sendRiderMessage, deleteRider, getRiderIssues, resolveRiderIssue, getRiderReport, assignOrderRider
+    // =============================================
+        // Demo data hata diya — ab saare riders Google Sheet (Riders) se aate hain
+    const rcDemo = () => false;
+
+    // ---- All Riders: filters + cards + full profile page ----
+    let rcFilter = 'new';
+    const RC_FILTERS = [['new', 'New (sabse naye pehle)'], ['old', 'Oldest (sabse purane pehle)'], ['online', 'Online'], ['offline', 'Offline'], ['approved', 'Approved'], ['pending', 'Pending']];
+    const rcDuty = x => String(x.duty || 'offline').toLowerCase();
+    const rcStat = x => String(x.status || 'pending').toLowerCase();
+    const rcJoined = x => Date.parse(x.joinedAt || (x.details || {}).joinDate || '') || 0;
+    function rcAvatar(x) {
+      const ph = (x.details || {}).photo || '';
+      if (/^data:image\//.test(ph) || /^https:\/\//.test(ph)) return `<img class="rc-av" src="${rcEsc(ph)}" alt="">`;
+      return `<div class="rc-av">${rcEsc((x.name || '?').trim().charAt(0).toUpperCase())}</div>`;
+    }
+    function rcLive(x) {
+      const d = rcDuty(x), m = { online: ['Online', 'var(--success)'], busy: ['Busy', 'var(--danger)'] }[d] || ['Offline', 'var(--muted)'];
+      return `<span class="rc-pill" style="color:${m[1]}">&#9679; ${m[0]}</span>`;
+    }
+    function rcSetFilter(f) { rcFilter = f; document.getElementById('rc-chips').style.display = 'none'; rcApplyFilter(); }
+    function rcFilterPanel() {
+      const card = document.getElementById('rc-chips').closest('.section-card');
+      if (!card.classList.contains('rc-open')) rcToggle(card);
+      const p = document.getElementById('rc-chips'); p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    }
+    function rcClearSearch() { document.getElementById('rc-search').value = ''; rcApplyFilter(); }
+    function rcApplyFilter() {
+      const cnt = { new: allRiders.length, old: allRiders.length, online: allRiders.filter(x => rcDuty(x) !== 'offline').length, offline: allRiders.filter(x => rcDuty(x) === 'offline').length,
+        approved: allRiders.filter(x => rcStat(x) === 'approved').length, pending: allRiders.filter(x => rcStat(x) === 'pending').length };
+      document.getElementById('rk-stats').innerHTML = [['Total', cnt.new], ['Online', cnt.online], ['Pending', cnt.pending]].map(t => `<div class="rk-stat"><b>${t[1]}</b><span>${t[0]}</span></div>`).join('');
+      document.getElementById('rc-chips').innerHTML = RC_FILTERS.map(f => `<button type="button" class="rk-opt ${rcFilter === f[0] ? 'on' : ''}" onclick="rcSetFilter('${f[0]}')"><i class="fa ${rcFilter === f[0] ? 'fa-circle-check' : 'fa-circle'}" style="${rcFilter === f[0] ? '' : 'opacity:.25'}"></i>${f[1]}<small>${cnt[f[0]]}</small></button>`).join('');
+      const qv = document.getElementById('rc-search').value; document.getElementById('rk-clear').style.display = qv ? 'flex' : 'none';
+      const q = qv.trim().toLowerCase();
+      let l = allRiders.filter(x => !q || [x.name, x.mobile, x.partnerId].some(v => String(v || '').toLowerCase().includes(q)));
+      if (rcFilter === 'online') l = l.filter(x => rcDuty(x) !== 'offline');
+      if (rcFilter === 'offline') l = l.filter(x => rcDuty(x) === 'offline');
+      if (rcFilter === 'approved') l = l.filter(x => rcStat(x) === 'approved');
+      if (rcFilter === 'pending') l = l.filter(x => rcStat(x) === 'pending');
+      l.sort((a, b) => rcFilter === 'old' ? rcJoined(a) - rcJoined(b) : rcJoined(b) - rcJoined(a));
+      document.getElementById('rc-count').textContent = '(' + l.length + ')';
+      document.getElementById('rc-filter-label').textContent = RC_FILTERS.find(f => f[0] === rcFilter)[1].split(' (')[0];
+      document.getElementById('rc-demo-note').textContent = !ridersFresh ? (ridersErr ? 'Live status nahi mila, purana data dikh raha hai. Refresh dabao.' : '⏳ Live online/offline status update ho raha hai...') : (allRiders.some(x => String(x.partnerId).startsWith('DEMO-')) ? 'Demo riders dikh rahe hain (server me abhi koi rider registered nahi). Real rider aate hi ye hat jayenge.' : '');
+      const BADGE = { approved: ['#1e8a57', 'rgba(30,138,87,.12)'], pending: ['#c27a00', 'rgba(224,161,0,.15)'] }, LIVE = { online: ['Online', '#1e8a57'], busy: ['Busy', '#d32f2f'] };
+      document.getElementById('rider-cards').innerHTML = l.length ? l.map(x => {
+        const id = rcEsc(x.partnerId), st = rcStat(x), bd = BADGE[st] || ['#d32f2f', 'rgba(211,47,47,.12)'], lv = LIVE[rcDuty(x)] || ['Offline', '#8a93a3'], jd = rcJoined(x);
+        return `<div class="rk-card"><div class="rk-row">
+          <div class="rk-avwrap">${rcAvatar(x)}<span class="rk-dot" style="background:${lv[1]}"></span></div>
+          <div class="rk-main"><b>${rcEsc(x.name) || 'Rider'}</b><span class="rk-sub">${id} &middot; ${rcEsc(x.vehicle) || '—'}</span><span class="rk-sub"><i class="fa fa-phone"></i>${rcEsc(x.mobile) || '—'}</span></div>
+          <div class="rk-side"><span class="rk-badge" style="color:${bd[0]};background:${bd[1]}">${rcEsc(st)}</span><span class="rk-live" style="color:${lv[1]}">&#9679; ${lv[0]}</span></div></div>
+          <div class="rk-grid"><div><b>${rcEsc(x.deliveries || 0)}</b><span>Deliveries</span></div><div><b>₹${rcEsc(x.earnings || 0)}</b><span>Earnings</span></div>
+            <div><b>${jd ? new Date(jd).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}</b><span>Joined</span></div></div>
+          <button type="button" class="rk-btn" onclick="rcPerf = 'all'; openRiderProfile('${id}')">See All Details <i class="fa fa-arrow-right"></i></button></div>`;
+      }).join('') : '<div class="loading-row" style="padding:1rem;text-align:center;color:var(--muted)">Is filter me koi rider nahi mila</div>';
+      rccApply(); rceApply();
+    }
+
+    // ---- COD Cash Pending (rider ke paas jama COD cash) ----
+    // GAS: x.cod = { collected, deposited, pending, orders:[{id,amount,date,customer}], deposits:[{amount,date,note}] }
+    // COD order deliver hote hi backend rider ka cod.collected/pending badhaye; manual cash: action addRiderCashDeposit {partnerId, amount, note}
+    let rccFilter = 'high', rccActive = null;
+    const RCC_FILTERS = [['high', 'Most Pending'], ['low', 'Least Pending'], ['due', 'Has Pending'], ['clear', 'Cleared (₹0)'], ['limit', 'Limit Crossed'], ['online', 'Online'], ['offline', 'Offline']];
+    const rccRiders = () => allRiders.filter(x => ['approved', 'blocked'].includes(rcStat(x)));
+    const rccLimit = () => parseFloat((document.getElementById('rc-codlimit') || {}).value) || 0;
+    const rccDate = d => { const t = Date.parse(d); return isNaN(t) ? rcEsc(d || '—') : new Date(t).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); };
+    function rcCod(x) {
+      const c = x.cod || {}, num = v => Number(v) || 0;
+      const pending = num(c.pending != null ? c.pending : x.cashPending), deposited = num(c.deposited != null ? c.deposited : x.cashDeposited);
+      return { collected: num(c.collected != null ? c.collected : (x.cashCollected != null ? x.cashCollected : pending + deposited)), deposited, pending, orders: c.orders || [], deposits: c.deposits || [] };
+    }
+    function rccFilterPanel() {
+      const m = document.getElementById('rcc-menu'), card = m.closest('.section-card');
+      if (!card.classList.contains('rc-open')) rcToggle(card);
+      m.style.display = m.style.display === 'none' ? 'block' : 'none';
+    }
+    function rccSetFilter(f) { rccFilter = f; document.getElementById('rcc-menu').style.display = 'none'; rccApply(); }
+    function rccApply() {
+      const all = rccRiders(), lim = rccLimit(), isLim = x => lim > 0 && rcCod(x).pending >= lim;
+      const cnt = { high: all.length, low: all.length, due: all.filter(x => rcCod(x).pending > 0).length, clear: all.filter(x => rcCod(x).pending <= 0).length, limit: all.filter(isLim).length,
+        online: all.filter(x => rcDuty(x) !== 'offline').length, offline: all.filter(x => rcDuty(x) === 'offline').length };
+      const sum = k => all.reduce((a, x) => a + rcCod(x)[k], 0);
+      document.getElementById('rcc-stats').innerHTML = [['Total Pending', '₹' + sum('pending')], ['Mujhe Mila', '₹' + sum('deposited')], ['Riders Due', cnt.due]].map(t => `<div class="rk-stat"><b>${t[1]}</b><span>${t[0]}</span></div>`).join('');
+      document.getElementById('rcc-menu').innerHTML = RCC_FILTERS.map(f => `<button type="button" class="rk-opt ${rccFilter === f[0] ? 'on' : ''}" onclick="rccSetFilter('${f[0]}')"><i class="fa ${rccFilter === f[0] ? 'fa-circle-check' : 'fa-circle'}" style="${rccFilter === f[0] ? '' : 'opacity:.25'}"></i>${f[1]}<small>${cnt[f[0]]}</small></button>`).join('');
+      const qv = document.getElementById('rcc-search').value; document.getElementById('rcc-clear').style.display = qv ? 'flex' : 'none';
+      const q = qv.trim().toLowerCase();
+      let l = all.filter(x => !q || [x.name, x.mobile, x.partnerId].some(v => String(v || '').toLowerCase().includes(q)));
+      if (rccFilter === 'due') l = l.filter(x => rcCod(x).pending > 0);
+      if (rccFilter === 'clear') l = l.filter(x => rcCod(x).pending <= 0);
+      if (rccFilter === 'limit') l = l.filter(isLim);
+      if (rccFilter === 'online') l = l.filter(x => rcDuty(x) !== 'offline');
+      if (rccFilter === 'offline') l = l.filter(x => rcDuty(x) === 'offline');
+      l.sort((a, b) => rccFilter === 'low' ? rcCod(a).pending - rcCod(b).pending : rcCod(b).pending - rcCod(a).pending);
+      document.getElementById('rcc-count').textContent = '(' + l.length + ')';
+      document.getElementById('rcc-filter-label').textContent = RCC_FILTERS.find(f => f[0] === rccFilter)[1].split(' (')[0];
+      const LIVE = { online: '#1e8a57', busy: '#d32f2f' };
+      document.getElementById('rcc-list').innerHTML = l.length ? l.map(x => {
+        const id = rcEsc(x.partnerId), c = rcCod(x);
+        return `<div class="rk-card"><div class="rk-row">
+          <div class="rk-avwrap">${rcAvatar(x)}<span class="rk-dot" style="background:${LIVE[rcDuty(x)] || '#8a93a3'}"></span></div>
+          <div class="rk-main"><b>${rcEsc(x.name) || 'Rider'}</b><span class="rk-sub">${id} &middot; ${rcEsc(x.vehicle) || '—'}</span></div>
+          <div class="rk-side"><span class="rcc-amt" style="color:${c.pending > 0 ? 'var(--accent)' : '#1e8a57'}">₹${c.pending}</span><span class="rk-sub">Pending</span>${isLim(x) ? '<span class="rcc-tag">Limit cross</span>' : ''}</div></div>
+          <div class="rk-grid"><div><b>₹${c.collected}</b><span>Collected</span></div><div><b>₹${c.deposited}</b><span>Mujhe Diya</span></div><div><b>₹${c.pending}</b><span>Pending</span></div></div>
+          <div style="display:flex;gap:.6rem"><button type="button" class="rk-btn fill" style="flex:1" ${c.pending > 0 ? '' : 'disabled'} onclick="rccOpenModal('${id}')"><i class="fa fa-hand-holding-dollar"></i> Cash Lo</button>
+            <button type="button" class="rk-btn" style="flex:1" onclick="rccOpen('${id}')">Details <i class="fa fa-arrow-right"></i></button></div></div>`;
+      }).join('') : '<div class="loading-row" style="padding:1rem;text-align:center;color:var(--muted)">Is filter me koi rider nahi mila</div>';
+    }
+    function rccOrderRow(o) {
+      return `<div class="rcc-row"><span><b>#${rcEsc(o.id)}</b>${o.customer ? ' · ' + rcEsc(o.customer) : ''}<small>${rccDate(o.date)}${o.phone ? ' · ' + rcEsc(o.phone) : ''}</small><small>Payment: COD · Order total ₹${rcEsc(o.total || o.amount)}${o.items ? ' · ' + rcEsc(o.items) : ''}</small></span><span style="text-align:right"><b>₹${rcEsc(o.amount)}</b><small style="display:block;color:${o.paid ? '#1e8a57' : 'var(--accent)'}">${o.paid ? '✓ Jama' : 'Baaki'}</small></span></div>`;
+    }
+    function rccOpen(id) {
+      const x = allRiders.find(r => String(r.partnerId) === String(id)); if (!x) return;
+      const c = rcCod(x), lim = rccLimit(), pid = rcEsc(x.partnerId);
+      const rows = (arr, fn, empty, kind) => rhRows(arr, fn, empty, kind, pid);
+      document.getElementById('rcc-body').innerHTML = `<button class="btn btn-secondary btn-sm" style="margin-bottom:.7rem" onclick="showPage('rider')"><i class="fa fa-arrow-left"></i> Back</button>
+        <div class="section-card" style="margin-bottom:.7rem"><div class="rc-prof-head">${rcAvatar(x)}<div class="rc-info"><b style="font-size:1.1rem">${rcEsc(x.name) || 'Rider'}</b><small>${pid} &middot; ${rcEsc(x.vehicle) || '—'}</small><div style="margin-top:.35rem">${rcLive(x)}</div></div></div>
+          <div class="rk-stats" style="padding-top:0"><div class="rk-stat"><b>₹${c.collected}</b><span>COD Collected</span></div><div class="rk-stat"><b style="color:#1e8a57">₹${c.deposited}</b><span>Mujhe Diya</span></div><div class="rk-stat"><b style="color:var(--accent)">₹${c.pending}</b><span>Pending</span></div></div>
+          <div class="rc-body">${lim > 0 && c.pending >= lim ? `<div class="rcc-tag" style="display:block;margin-bottom:.7rem;padding:.5rem .7rem;border-radius:10px;text-transform:none;font-size:.75rem">Limit cross: pending ₹${c.pending} (limit ₹${lim})</div>` : ''}
+            <button type="button" class="rk-approve" style="background:var(--accent);box-shadow:0 6px 16px rgba(240,81,26,.3)" ${c.pending > 0 ? '' : 'disabled'} onclick="rccOpenModal('${pid}')"><i class="fa fa-hand-holding-dollar"></i> Cash Lo</button></div></div>
+        <div class="section-card" style="margin-bottom:.7rem"><div class="section-head"><h3><i class="fa fa-box"></i> COD Orders</h3></div>
+          ${rows(c.orders, rccOrderRow, 'Abhi koi COD order nahi', 'cod-orders')}</div>
+        <div class="section-card" style="margin-bottom:.7rem"><div class="section-head"><h3><i class="fa fa-clock-rotate-left"></i> Cash Jama History</h3></div>
+          ${rows(c.deposits, d => `<div class="rcc-row"><span><b>${rccDate(d.date)}</b><small>${rcEsc(d.note) || 'Cash liya'}</small></span><b style="color:#1e8a57">+ ₹${rcEsc(d.amount)}</b></div>`, 'Abhi tak koi cash jama nahi hua', 'cod-deposits')}</div>`;
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-rider-cash').classList.add('active');
+      document.getElementById('topbar-title').textContent = 'Rider COD Cash';
+      window.scrollTo(0, 0);
+    }
+    function rccOpenModal(id) {
+      const x = allRiders.find(r => String(r.partnerId) === String(id)); if (!x) return;
+      const c = rcCod(x); if (c.pending <= 0) return showToast('Is rider ka koi cash pending nahi hai', 'info');
+      rccActive = id;
+      document.getElementById('rcc-modal-info').innerHTML = `<b>${rcEsc(x.name)}</b> (${rcEsc(x.partnerId)})<br>Pending cash: <b style="color:var(--accent)">₹${c.pending}</b>`;
+      document.getElementById('rcc-amt').value = c.pending; document.getElementById('rcc-note').value = '';
+      document.getElementById('rider-cash-modal').classList.add('open');
+    }
+    function rccFull() { const x = allRiders.find(r => String(r.partnerId) === String(rccActive)); if (x) document.getElementById('rcc-amt').value = rcCod(x).pending; }
+    async function rccConfirm() {
+      const x = allRiders.find(r => String(r.partnerId) === String(rccActive)); if (!x) return;
+      const c = rcCod(x), amt = parseFloat(document.getElementById('rcc-amt').value), note = document.getElementById('rcc-note').value.trim();
+      if (!(amt > 0)) return showToast('Sahi amount daalein', 'error');
+      if (amt > c.pending) return showToast('Pending (₹' + c.pending + ') se zyada cash nahi le sakte', 'error');
+      const demo = String(x.partnerId).startsWith('DEMO-');
+      if (!demo) await postToSheet({ action: 'addRiderCashDeposit', partnerId: x.partnerId, amount: amt, note });
+      x.cod = { collected: c.collected, deposited: c.deposited + amt, pending: c.pending - amt, orders: c.orders, deposits: [{ amount: amt, date: new Date().toISOString().slice(0, 10), note }, ...c.deposits] };
+      x.cashPending = x.cod.pending;
+      closeModal('rider-cash-modal'); showToast('₹' + amt + ' cash le liya' + (demo ? ' (demo)' : ''), 'success');
+      renderRiders(allRiders); rcApplyFilter();
+      if (document.getElementById('page-rider-cash').classList.contains('active')) rccOpen(x.partnerId);
+      if (!demo) setTimeout(loadRiderPage, 1500);
+    }
+
+    // ---- Rider Earnings (kamai, kitna diya, kitna baki) ----
+    // GAS: x.earn = { total, paid, unpaid, orders:[{id,customer,amount,earning,date}], payouts:[{amount,date,note}] }; manual payout: addRiderPayout {partnerId, amount, note}
+    let rceFilter = 'high', rceActive = null;
+    const RCE_FILTERS = [['high', 'Most Earning'], ['low', 'Least Earning'], ['unpaid', 'Most Baki'], ['due', 'Has Baki'], ['paid', 'Fully Paid'], ['online', 'Online'], ['offline', 'Offline']];
+    function rcEarn(x) {
+      const e = x.earn || {}, num = v => Number(v) || 0;
+      const total = num(e.total != null ? e.total : x.earnings), unpaid = num(e.unpaid != null ? e.unpaid : x.earningsUnpaid);
+      return { total, unpaid, paid: num(e.paid != null ? e.paid : total - unpaid), orders: e.orders || [], payouts: e.payouts || [] };
+    }
+    function rceFilterPanel() {
+      const m = document.getElementById('rce-menu'), card = m.closest('.section-card');
+      if (!card.classList.contains('rc-open')) rcToggle(card);
+      m.style.display = m.style.display === 'none' ? 'block' : 'none';
+    }
+    function rceSetFilter(f) { rceFilter = f; document.getElementById('rce-menu').style.display = 'none'; rceApply(); }
+    function rceApply() {
+      const all = rccRiders(), sum = k => all.reduce((a, x) => a + rcEarn(x)[k], 0);
+      const cnt = { high: all.length, low: all.length, unpaid: all.length, due: all.filter(x => rcEarn(x).unpaid > 0).length, paid: all.filter(x => rcEarn(x).unpaid <= 0).length,
+        online: all.filter(x => rcDuty(x) !== 'offline').length, offline: all.filter(x => rcDuty(x) === 'offline').length };
+      document.getElementById('rce-stats').innerHTML = [['Total Earning', '₹' + sum('total')], ['Maine Diya', '₹' + sum('paid')], ['Baki Dena', '₹' + sum('unpaid')]].map(t => `<div class="rk-stat"><b>${t[1]}</b><span>${t[0]}</span></div>`).join('');
+      document.getElementById('rce-menu').innerHTML = RCE_FILTERS.map(f => `<button type="button" class="rk-opt ${rceFilter === f[0] ? 'on' : ''}" onclick="rceSetFilter('${f[0]}')"><i class="fa ${rceFilter === f[0] ? 'fa-circle-check' : 'fa-circle'}" style="${rceFilter === f[0] ? '' : 'opacity:.25'}"></i>${f[1]}<small>${cnt[f[0]]}</small></button>`).join('');
+      const qv = document.getElementById('rce-search').value; document.getElementById('rce-clear').style.display = qv ? 'flex' : 'none';
+      const q = qv.trim().toLowerCase();
+      let l = all.filter(x => !q || [x.name, x.mobile, x.partnerId].some(v => String(v || '').toLowerCase().includes(q)));
+      if (rceFilter === 'due') l = l.filter(x => rcEarn(x).unpaid > 0);
+      if (rceFilter === 'paid') l = l.filter(x => rcEarn(x).unpaid <= 0);
+      if (rceFilter === 'online') l = l.filter(x => rcDuty(x) !== 'offline');
+      if (rceFilter === 'offline') l = l.filter(x => rcDuty(x) === 'offline');
+      const key = rceFilter === 'unpaid' || rceFilter === 'due' ? 'unpaid' : 'total';
+      l.sort((a, b) => rceFilter === 'low' ? rcEarn(a).total - rcEarn(b).total : rcEarn(b)[key] - rcEarn(a)[key]);
+      document.getElementById('rce-count').textContent = '(' + l.length + ')';
+      document.getElementById('rce-filter-label').textContent = RCE_FILTERS.find(f => f[0] === rceFilter)[1];
+      const LIVE = { online: '#1e8a57', busy: '#d32f2f' };
+      document.getElementById('rce-list').innerHTML = l.length ? l.map(x => {
+        const id = rcEsc(x.partnerId), e = rcEarn(x);
+        return `<div class="rk-card"><div class="rk-row">
+          <div class="rk-avwrap">${rcAvatar(x)}<span class="rk-dot" style="background:${LIVE[rcDuty(x)] || '#8a93a3'}"></span></div>
+          <div class="rk-main"><b>${rcEsc(x.name) || 'Rider'}</b><span class="rk-sub">${id} &middot; ${rcEsc(x.vehicle) || '—'}</span></div>
+          <div class="rk-side"><span class="rcc-amt" style="color:${e.unpaid > 0 ? 'var(--accent)' : '#1e8a57'}">₹${e.unpaid}</span><span class="rk-sub">Baki</span></div></div>
+          <div class="rk-grid"><div><b>₹${e.total}</b><span>Total Earning</span></div><div><b>₹${e.paid}</b><span>Maine Diya</span></div><div><b>₹${e.unpaid}</b><span>Baki</span></div></div>
+          <div style="display:flex;gap:.6rem"><button type="button" class="rk-btn fill" style="flex:1" ${e.unpaid > 0 ? '' : 'disabled'} onclick="rceOpenModal('${id}')"><i class="fa fa-sack-dollar"></i> Payout Do</button>
+            <button type="button" class="rk-btn" style="flex:1" onclick="rceOpen('${id}')">Details <i class="fa fa-arrow-right"></i></button></div></div>`;
+      }).join('') : '<div class="loading-row" style="padding:1rem;text-align:center;color:var(--muted)">Is filter me koi rider nahi mila</div>';
+    }
+    function rceOpen(id) {
+      const x = allRiders.find(r => String(r.partnerId) === String(id)); if (!x) return;
+      const e = rcEarn(x), pid = rcEsc(x.partnerId);
+      const rows = (arr, fn, empty, kind) => rhRows(arr, fn, empty, kind, pid);
+      document.getElementById('rce-body').innerHTML = `<button class="btn btn-secondary btn-sm" style="margin-bottom:.7rem" onclick="showPage('rider')"><i class="fa fa-arrow-left"></i> Back</button>
+        <div class="section-card" style="margin-bottom:.7rem"><div class="rc-prof-head">${rcAvatar(x)}<div class="rc-info"><b style="font-size:1.1rem">${rcEsc(x.name) || 'Rider'}</b><small>${pid} &middot; ${rcEsc(x.vehicle) || '—'}</small><div style="margin-top:.35rem">${rcLive(x)}</div></div></div>
+          <div class="rk-stats" style="padding-top:0"><div class="rk-stat"><b>₹${e.total}</b><span>Total Earning</span></div><div class="rk-stat"><b style="color:#1e8a57">₹${e.paid}</b><span>Maine Diya</span></div><div class="rk-stat"><b style="color:var(--accent)">₹${e.unpaid}</b><span>Baki</span></div></div>
+          <div class="rc-body"><button type="button" class="rk-approve" style="background:var(--accent);box-shadow:0 6px 16px rgba(240,81,26,.3)" ${e.unpaid > 0 ? '' : 'disabled'} onclick="rceOpenModal('${pid}')"><i class="fa fa-sack-dollar"></i> Payout Do</button></div></div>
+        <div class="section-card" style="margin-bottom:.7rem"><div class="section-head"><h3><i class="fa fa-box"></i> Delivery Earnings</h3></div>
+          ${rows(e.orders, o => `<div class="rcc-row"><span><b>#${rcEsc(o.id)}</b>${o.customer ? ' · ' + rcEsc(o.customer) : ''}<small>${rccDate(o.date)} &middot; Order ₹${rcEsc(o.amount)}</small></span><b style="color:var(--accent)">+ ₹${rcEsc(o.earning)}</b></div>`, 'Abhi koi delivery nahi', 'earn-orders')}</div>
+        <div class="section-card" style="margin-bottom:.7rem"><div class="section-head"><h3><i class="fa fa-clock-rotate-left"></i> Payout History</h3></div>
+          ${rows(e.payouts, d => `<div class="rcc-row"><span><b>${rccDate(d.date)}</b><small>${rcEsc(d.note) || 'Payout diya'}</small></span><b style="color:#1e8a57">₹${rcEsc(d.amount)}</b></div>`, 'Abhi tak koi payout nahi diya', 'earn-payouts')}</div>`;
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-rider-earn').classList.add('active');
+      document.getElementById('topbar-title').textContent = 'Rider Earnings';
+      window.scrollTo(0, 0);
+    }
+    function rceOpenModal(id) {
+      const x = allRiders.find(r => String(r.partnerId) === String(id)); if (!x) return;
+      const e = rcEarn(x); if (e.unpaid <= 0) return showToast('Is rider ka koi payout baki nahi hai', 'info');
+      rceActive = id;
+      document.getElementById('rce-modal-info').innerHTML = `<b>${rcEsc(x.name)}</b> (${rcEsc(x.partnerId)})<br>Baki kamai: <b style="color:var(--accent)">₹${e.unpaid}</b>`;
+      document.getElementById('rce-amt').value = e.unpaid; document.getElementById('rce-note').value = '';
+      document.getElementById('rider-payout-modal').classList.add('open');
+    }
+    function rceFull() { const x = allRiders.find(r => String(r.partnerId) === String(rceActive)); if (x) document.getElementById('rce-amt').value = rcEarn(x).unpaid; }
+    async function rceConfirm() {
+      const x = allRiders.find(r => String(r.partnerId) === String(rceActive)); if (!x) return;
+      const e = rcEarn(x), amt = parseFloat(document.getElementById('rce-amt').value), note = document.getElementById('rce-note').value.trim();
+      if (!(amt > 0)) return showToast('Sahi amount daalein', 'error');
+      if (amt > e.unpaid) return showToast('Baki (₹' + e.unpaid + ') se zyada payout nahi de sakte', 'error');
+      const demo = String(x.partnerId).startsWith('DEMO-');
+      if (!demo) await postToSheet({ action: 'addRiderPayout', partnerId: x.partnerId, amount: amt, note });
+      x.earn = { total: e.total, paid: e.paid + amt, unpaid: e.unpaid - amt, orders: e.orders, payouts: [{ amount: amt, date: new Date().toISOString().slice(0, 10), note }, ...e.payouts] };
+      x.earningsUnpaid = x.earn.unpaid;
+      closeModal('rider-payout-modal'); showToast('₹' + amt + ' payout record ho gaya' + (demo ? ' (demo)' : ''), 'success');
+      renderRiders(allRiders); rcApplyFilter();
+      if (document.getElementById('page-rider-earn').classList.contains('active')) rceOpen(x.partnerId);
+      if (!demo) setTimeout(loadRiderPage, 1500);
+    }
+
+    // ---- Full History page (See All) ----
+    let rhCtx = { kind: '', id: '', per: 'all' };
+    const rhDay = d => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || '')); if (m) return new Date(+m[1], +m[2] - 1, +m[3]); const t = Date.parse(d); return isNaN(t) ? null : new Date(new Date(t).setHours(0, 0, 0, 0)); };
+    function rhIn(d, per) {
+      if (per === 'all') return true; const x = rhDay(d); if (!x) return false;
+      const n = new Date(), t0 = new Date(n.getFullYear(), n.getMonth(), n.getDate()), day = 86400000, df = Math.round((t0 - x) / day);
+      if (per === 'today') return df === 0; if (per === 'yesterday') return df === 1;
+      if (per === 'week') return df >= 0 && df < ((t0.getDay() + 6) % 7) + 1;
+      if (per === 'month') return x.getMonth() === n.getMonth() && x.getFullYear() === n.getFullYear();
+      return x.getFullYear() === n.getFullYear();
+    }
+    const rhSort = (arr, k) => arr.slice().sort((a, b) => ((rhDay(b[k]) || 0) - (rhDay(a[k]) || 0)));
+    function rhRows(arr, fn, empty, kind, pid) {
+      if (!arr.length) return `<div class="rcc-row" style="color:var(--muted)">${empty}</div>`;
+      const k = kind === 'issues' ? 'time' : 'date', list = rhSort(arr, k);
+      return list.slice(0, 3).map(fn).join('') + (list.length > 3 ? `<div class="rcc-row" style="justify-content:center"><button type="button" class="rk-btn" style="width:auto;padding:.6rem 1.4rem" onclick="rhOpen('${kind}','${pid}')">See All (${list.length}) <i class="fa fa-arrow-right"></i></button></div>` : '');
+    }
+    const RH = {
+      'cod-orders': { title: 'COD Orders', icon: 'fa-box', key: 'date', list: x => rcCod(x).orders, stat: l => ['Total COD', '₹' + l.reduce((a, i) => a + (Number(i.amount) || 0), 0)], back: id => rccOpen(id),
+        row: rccOrderRow },
+      'cod-deposits': { title: 'Cash Jama History', icon: 'fa-clock-rotate-left', key: 'date', list: x => rcCod(x).deposits, stat: l => ['Total Jama', '₹' + l.reduce((a, i) => a + (Number(i.amount) || 0), 0)], back: id => rccOpen(id),
+        row: d => `<div class="rcc-row"><span><b>${rccDate(d.date)}</b><small>${rcEsc(d.note) || 'Cash liya'}</small></span><b style="color:#1e8a57">+ ₹${rcEsc(d.amount)}</b></div>` },
+      'earn-orders': { title: 'Delivery Earnings', icon: 'fa-box', key: 'date', list: x => rcEarn(x).orders, stat: l => ['Total Earning', '₹' + l.reduce((a, i) => a + (Number(i.earning) || 0), 0)], back: id => rceOpen(id),
+        row: o => `<div class="rcc-row"><span><b>#${rcEsc(o.id)}</b>${o.customer ? ' · ' + rcEsc(o.customer) : ''}<small>${rccDate(o.date)} &middot; Order ₹${rcEsc(o.amount)}</small></span><b style="color:var(--accent)">+ ₹${rcEsc(o.earning)}</b></div>` },
+      'earn-payouts': { title: 'Payout History', icon: 'fa-clock-rotate-left', key: 'date', list: x => rcEarn(x).payouts, stat: l => ['Total Payout', '₹' + l.reduce((a, i) => a + (Number(i.amount) || 0), 0)], back: id => rceOpen(id),
+        row: d => `<div class="rcc-row"><span><b>${rccDate(d.date)}</b><small>${rcEsc(d.note) || 'Payout diya'}</small></span><b style="color:#1e8a57">₹${rcEsc(d.amount)}</b></div>` },
+      'issues': { title: 'Rider Issues', icon: 'fa-triangle-exclamation', key: 'time', list: () => rcIssues, stat: l => ['Unresolved', l.filter(i => !i.resolved).length], back: () => showPage('rider'),
+        row: i => `<div class="rcc-row"><span><b>#${rcEsc(i.orderId)} · ${rcEsc(i.rider)}</b><small>${rcEsc(i.time)}</small><small style="color:var(--text)">${rcEsc(i.issue)}</small></span>${i.resolved ? '<small>Resolved</small>' : `<button class="btn btn-success btn-sm" onclick="resolveRiderIssue('${rcEsc(i.id)}')">Resolved</button>`}</div>` }
+    };
+    function rhOpen(kind, id) {
+      rhCtx = { kind, id: id || '', per: 'all' }; rhRender();
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-rider-hist').classList.add('active');
+      document.getElementById('topbar-title').textContent = RH[kind].title; window.scrollTo(0, 0);
+    }
+    function rhSetPer(per) { rhCtx.per = per; rhRender(); }
+    function rhBack() { RH[rhCtx.kind].back(rhCtx.id); }
+    function rhRender() {
+      const c = rhCtx, cfg = RH[c.kind], x = c.id ? allRiders.find(r => String(r.partnerId) === String(c.id)) : null;
+      if (c.id && !x) return;
+      const all = rhSort(cfg.list(x), cfg.key), l = all.filter(i => rhIn(i[cfg.key], c.per)), st = cfg.stat(l);
+      document.getElementById('rh-body').innerHTML = `<button class="btn btn-secondary btn-sm" style="margin-bottom:.7rem" onclick="rhBack()"><i class="fa fa-arrow-left"></i> Back</button>
+        <div class="section-card" style="margin-bottom:.7rem"><div class="section-head"><h3><i class="fa ${cfg.icon}"></i> ${cfg.title}</h3>
+          <select class="rk-sel" onchange="rhSetPer(this.value)">${RC_PERIODS.map(p => `<option value="${p[0]}" ${c.per === p[0] ? 'selected' : ''}>${p[1]}</option>`).join('')}</select></div>
+          ${x ? `<div style="padding:.7rem 1rem 0;font-size:.85rem;color:var(--muted)"><b style="color:var(--text)">${rcEsc(x.name)}</b> &middot; ${rcEsc(x.partnerId)}</div>` : ''}
+          <div class="rk-stats"><div class="rk-stat"><b>${l.length}</b><span>Entries</span></div><div class="rk-stat"><b>${st[1]}</b><span>${st[0]}</span></div></div>
+          <div style="margin-top:.8rem">${l.length ? l.map(cfg.row).join('') : '<div class="rcc-row" style="color:var(--muted)">Is period me koi entry nahi</div>'}</div></div>`;
+    }
+
+    // ---- Performance filter (profile page) ----
+    const RC_PERIODS = [['today', 'Today'], ['yesterday', 'Yesterday'], ['week', 'This Week'], ['month', 'This Month'], ['year', 'This Year'], ['all', 'All Day']];
+    let rcPerf = 'all';
+    function rcPerfStats(x, per) {
+      if (x.stats && x.stats[per]) return x.stats[per];
+      if (per === 'all') return { deliveries: x.deliveries || 0, earnings: x.earnings || 0, unpaid: x.earningsUnpaid || 0, cash: x.cashPending || 0 };
+      return null;
+    }
+    function rcPerfHtml(x) {
+      const t = rcPerfStats(x, rcPerf), m = n => t ? rcEsc(n) : '—', r = (l, v) => `<tr><td>${l}</td><td>${v}</td></tr>`;
+      return '<table class="rc-tbl">' + r('Deliveries', m(t && t.deliveries)) + r('Total earnings', t ? '₹' + rcEsc(t.earnings) : '—') +
+        r('Unpaid earnings', t ? '₹' + rcEsc(t.unpaid) : '—') + r('Cash pending', t ? '₹' + rcEsc(t.cash) : '—') + '</table>';
+    }
+    async function rcSetPerf(id, per) {
+      rcPerf = per; const x = allRiders.find(r => String(r.partnerId) === String(id)), body = document.getElementById('rp-perf-body');
+      if (!x || !body) return;
+      if (!rcPerfStats(x, per) && !String(id).startsWith('DEMO-')) {
+        body.style.opacity = .5;
+        try {
+          const r = await fetch(SCRIPT_URL + '?action=getRiderStats&partnerId=' + encodeURIComponent(id) + '&period=' + per + '&adminToken=' + encodeURIComponent(adminToken));
+          const d = await r.json(); if (d.stats) { x.stats = x.stats || {}; x.stats[per] = d.stats; }
+        } catch (e) { }
+        body.style.opacity = 1;
+        if (rcPerf !== per) return;
+      }
+      body.innerHTML = rcPerfHtml(x);
+    }
+
+    // =============================================
+    // ORDER REQUESTS: rider ne accept / reject / no-response kiya + "Accept nahi hua" popup
+    // GAS: getRiderOrders -> { events:[{offerId,orderId,partnerId,riderName,riderMobile,status,offeredAt,respondedAt,reason,cust,ph,addr,items:[{q,i,p}],tot,pay,km,earn,orderStatus,acceptedAt,deliveredAt}] } (naye pehle)
+    // =============================================
+    let rnEvents = [], rnLoaded = false, rnFilter = 'all', rnShow = 20, rnBusy = false, rnTimer = null, rnQueue = [], rnCur = null;
+    let rpTabNow = 'personal', rpPid = '', rpOF = 'all';
+    const RN_SEEN = 'rm_rn_seen';
+    const rnSeen = () => { try { return JSON.parse(localStorage.getItem(RN_SEEN) || 'null'); } catch (e) { return null; } };
+    const rnSaveSeen = a => { try { localStorage.setItem(RN_SEEN, JSON.stringify(a.slice(-400))); } catch (e) { } };
+    const rnKey = e => e.offerId + '|' + e.orderId;
+    const RN_G = { accepted: ['Accepted', '#1e8a57', 'rgba(30,138,87,.12)'], delivered: ['Delivered', '#0f6b8a', 'rgba(15,107,138,.12)'], rejected: ['Rejected', '#d32f2f', 'rgba(211,47,47,.12)'], noresp: ['Not accepted', '#c27a00', 'rgba(224,161,0,.16)'], waiting: ['Waiting', '#6b7280', 'rgba(107,114,128,.14)'], cancelled: ['Cancelled', '#6b7280', 'rgba(107,114,128,.14)'] };
+    function rnGroup(e) {
+      const s = String(e.status || '').toLowerCase(), os = String(e.orderStatus || '').toLowerCase();
+      if (s === 'completed' || (s === 'accepted' && os === 'delivered')) return 'delivered';
+      if (s === 'accepted') return 'accepted';
+      if (s === 'rejected') return 'rejected';
+      if (s === 'expired') return 'noresp';
+      if (s === 'offered') return 'waiting';
+      return 'cancelled';
+    }
+    const rnItems = e => (e.items || []).map(i => (i.q || 1) + ' × ' + rcEsc(i.i) + (i.p ? ' (₹' + rcEsc(i.p) + ')' : '')).join(', ') || '—';
+    const rnT = s => { const m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2})/.exec(String(s || '')); return m ? m[3] + '/' + m[2] + ' ' + m[4] : (rcEsc(s) || '—'); };
+    // order abhi bhi kisi rider ne accept nahi kiya (last offer rejected/expired) -> admin ko assign karna hai
+    function rnNeedsAssign(e) {
+      const g = rnGroup(e); if (g !== 'rejected' && g !== 'noresp') return false;
+      const latest = rnEvents.find(x => x.orderId === e.orderId);
+      if (!latest || latest.offerId !== e.offerId) return false;
+      const mo = (typeof allOrders !== 'undefined' ? allOrders : []).find(o => String(o.id) === String(e.orderId));
+      if (mo && /delivered|cancelled/i.test(String(mo.status))) return false;
+      return true;
+    }
+    function rnCard(e, opt) {
+      opt = opt || {};
+      const g = rnGroup(e), m = RN_G[g], prog = g === 'accepted' && e.orderStatus ? ' · ' + rcEsc(e.orderStatus) : '';
+      const rider = opt.noRider ? '' : `<div class="rn-sub"><i class="fa fa-motorcycle"></i> ${rcEsc(e.riderName) || 'Rider'} <small>${rcEsc(e.partnerId)}</small></div>`;
+      const why = e.reason && g === 'rejected' ? `<div class="rn-sub" style="color:#d32f2f">Reason: ${rcEsc(e.reason)}</div>` : '';
+      const act = rnNeedsAssign(e) ? `<button type="button" class="rk-btn" style="margin-top:.55rem" onclick="openAssignRider('${rcEsc(e.orderId)}')"><i class="fa fa-motorcycle"></i> Assign Other</button>` : '';
+      return `<div class="rk-card rn-card"><div class="rn-top"><b>#${rcEsc(e.orderId)}</b><span class="rn-pill" style="color:${m[1]};background:${m[2]}">${m[0]}${prog}</span></div>
+        <div class="rn-sub"><i class="fa fa-user"></i> ${rcEsc(e.cust) || '—'} &middot; <i class="fa fa-phone"></i> ${rcEsc(e.ph) || '—'}</div>
+        <div class="rn-items">${rnItems(e)}</div>
+        <div class="rn-meta"><b>₹${rcEsc(e.tot)}</b> &middot; ${rcEsc(e.pay)} &middot; ${rcEsc(e.km)} km &middot; Rider earn ₹${rcEsc(e.earn)}</div>
+        ${rider}${why}<div class="rn-sub">${rcEsc(e.addr)}</div>
+        <div class="rn-time">Request: ${rnT(e.offeredAt)}${e.respondedAt ? ' &middot; Response: ' + rnT(e.respondedAt) : ''}${e.deliveredAt ? ' &middot; Delivered: ' + rnT(e.deliveredAt) : ''}</div>${act}</div>`;
+    }
+    const RN_TABS = [['all', 'All'], ['accepted', 'Accepted'], ['delivered', 'Delivered'], ['rejected', 'Rejected'], ['noresp', 'Not accepted'], ['waiting', 'Waiting']];
+    function rnCounts(list) { const c = { all: list.length }; Object.keys(RN_G).forEach(k => c[k] = list.filter(e => rnGroup(e) === k).length); return c; }
+    function rnSetFilter(f) { rnFilter = f; rnShow = 20; rnRender(); }
+    function rnRender() {
+      const st = document.getElementById('rn-stats'); if (!st) return;
+      const c = rnCounts(rnEvents);
+      st.innerHTML = RN_TABS.slice(1).filter(t => t[0] !== 'waiting' || true).map(t => `<div class="rk-stat"><b>${c[t[0]]}</b><span>${t[1]}</span></div>`).join('');
+      document.getElementById('rn-chips').innerHTML = RN_TABS.map(f => `<button type="button" class="rn-chip ${rnFilter === f[0] ? 'on' : ''}" onclick="rnSetFilter('${f[0]}')">${f[1]} <small>${c[f[0]]}</small></button>`).join('');
+      const l = rnEvents.filter(e => rnFilter === 'all' || rnGroup(e) === rnFilter);
+      document.getElementById('rn-count').textContent = '(' + l.length + ')';
+      document.getElementById('rn-list').innerHTML = l.length
+        ? l.slice(0, rnShow).map(e => rnCard(e)).join('') + (l.length > rnShow ? `<button type="button" class="rk-btn" onclick="rnShow+=20;rnRender()">Aur dikhao (${l.length - rnShow})</button>` : '')
+        : '<div class="loading-row" style="padding:1rem;text-align:center;color:var(--muted)">' + (rnLoaded ? 'Is filter me koi order request nahi' : 'Loading...') + '</div>';
+    }
+    async function rnLoad(manual) {
+      if (rnBusy || !adminToken) return; rnBusy = true;
+      try {
+        const r = await fetch(SCRIPT_URL + '?action=getRiderOrders&adminToken=' + encodeURIComponent(adminToken));
+        const d = await r.json();
+        if (d.error) { if (manual) showToast('Order requests load error: ' + d.error, 'error'); }
+        else {
+          rnEvents = d.events || []; rnLoaded = true; if (applyRiderStatusOverlay()) { try { filterOrders(); } catch (x) { } } rnRender(); rnCheck(); rpOrdersRefresh();
+          try { if (document.getElementById('order-modal').classList.contains('open') && currentOrderEdit) { const sel = document.getElementById('modal-status-sel'), keep = sel && sel.value; openOrderDetail(currentOrderEdit); const s2 = document.getElementById('modal-status-sel'); if (s2 && keep) s2.value = keep; } } catch (x) { }
+        }
+      } catch (e) { if (manual) showToast('Order requests load nahi hue', 'error'); }
+      rnBusy = false;
+    }
+    let rcRidTimer = null;
+    function rcRidersAuto() {
+      clearInterval(rcRidTimer);
+      rcRidTimer = setInterval(async () => {
+        if (!adminToken || document.hidden) return;
+        const onRider = document.getElementById('page-rider').classList.contains('active');
+        const inAssign = !!document.querySelector('#rider-assign-modal.open');
+        if (!onRider && !inAssign) return;
+        if (await fetchRidersOnce()) { if (onRider) rcApplyFilter(); if (inAssign) assignBuild(); }
+      }, 20000);
+    }
+    // Rider app ke steps -> dashboard ka order status (sheet ka trigger 1 min me update karta hai, ye turant dikhata hai)
+    const RN_RANK = { processing: 0, confirmed: 1, packed: 2, 'ready for handover': 2.5, shipped: 3, 'out for delivery': 4, delivered: 5 };
+    function rnStepToStatus(s) {
+      s = String(s || '');
+      if (/^delivered$/i.test(s)) return 'Delivered';
+      if (/picked up|on the way|arrived at customer/i.test(s)) return 'Out for Delivery';
+      if (/accepted|going to store|arrived at store/i.test(s)) return 'Shipped';
+      return '';
+    }
+    function applyRiderStatusOverlay() {
+      if (typeof allOrders === 'undefined' || !allOrders || !allOrders.length || !rnEvents.length) return false;
+      let ch = false;
+      allOrders.forEach(o => {
+        const cur = String(o.status || 'Processing').toLowerCase();
+        if (cur === 'cancelled' || cur === 'delivered') return;
+        const e = rnEvents.find(x => String(x.orderId) === String(o.id) && /^(accepted|completed)$/i.test(String(x.status)));
+        if (!e) return;
+        const want = rnStepToStatus(e.orderStatus); if (!want) return;
+        if ((RN_RANK[want.toLowerCase()] || 0) > (RN_RANK[cur] || 0)) { o.status = want; ch = true; }
+      });
+      return ch;
+    }
+    function rnStart() { rnLoad(); clearInterval(rnTimer); rnTimer = setInterval(rnLoad, 25000); rcRidersAuto(); }
+    // ---- "Accept nahi hua" popup ----
+    function rnCheck() {
+      const cand = rnEvents.filter(rnNeedsAssign), seen = rnSeen();
+      if (seen === null) { rnSaveSeen(cand.map(rnKey)); return; }   // pehli baar: purane orders ka popup nahi
+      const fresh = cand.filter(e => seen.indexOf(rnKey(e)) < 0 && !rnQueue.some(q => rnKey(q) === rnKey(e)) && !(rnCur && rnKey(rnCur) === rnKey(e)));
+      rnQueue.push.apply(rnQueue, fresh.reverse());
+      rnQueue = rnQueue.filter(e => rnNeedsAssign(e));
+      if (rnCur && !rnNeedsAssign(rnCur)) { rnNaHide(); showToast('Order #' + rnCur.orderId + ' ab dusre rider ko chala gaya', 'info'); rnCur = null; }
+      if (!rnCur && rnQueue.length && !document.querySelector('#rider-assign-modal.open')) rnNaNext();
+    }
+    function rnNaHide() { document.getElementById('rn-na-modal').classList.remove('open'); }
+    function rnNaNext() {
+      const e = rnQueue.shift(); if (!e) return;
+      rnCur = e; const s = rnSeen() || []; s.push(rnKey(e)); rnSaveSeen(s);
+      const g = rnGroup(e), r = (a, b) => `<tr><td>${a}</td><td>${b}</td></tr>`;
+      document.getElementById('rn-na-pos').textContent = rnQueue.length ? '(+' + rnQueue.length + ' aur)' : '';
+      document.getElementById('rn-na-body').innerHTML = `<div class="rn-na-flag">${g === 'rejected' ? 'Rider ne REJECT kiya' : 'Rider ne time par ACCEPT nahi kiya'} &mdash; NOT ACCEPTED</div><table class="rc-tbl">` +
+        r('Order', '#' + rcEsc(e.orderId)) + r('Customer', rcEsc(e.cust) || '—') + r('Mobile', rcEsc(e.ph) || '—') + r('Items', rnItems(e)) + r('Address', rcEsc(e.addr) || '—') +
+        r('Payment', rcEsc(e.pay)) + r('Distance', rcEsc(e.km) + ' km') + r('Price', '<span style="color:var(--accent)">₹' + rcEsc(e.tot) + '</span>') +
+        r('Status', '<span style="color:#d32f2f">Not accepted</span>') + r('Rider', rcEsc(e.riderName) + ' (' + rcEsc(e.partnerId) + ')') + (e.reason ? r('Reason', rcEsc(e.reason)) : '') + '</table>';
+      document.getElementById('rn-na-modal').classList.add('open');
+      try { SoundFX.error(); } catch (x) { }
+    }
+    function rnNaClose() { rnNaHide(); rnCur = null; if (rnQueue.length) setTimeout(rnNaNext, 300); }
+    function rnNaAssign() { const id = rnCur && rnCur.orderId; rnNaHide(); rnCur = null; if (id) openAssignRider(id); }
+    // ---- Rider profile: Personal Details / Order Details tabs ----
+    function rpTab(t, pid) {
+      rpTabNow = t; if (pid) rpPid = String(pid);
+      const p = document.getElementById('rp-sec-personal'), o = document.getElementById('rp-sec-orders'); if (!p || !o) return;
+      p.style.display = t === 'personal' ? '' : 'none'; o.style.display = t === 'orders' ? '' : 'none';
+      document.getElementById('rp-tab-personal').classList.toggle('on', t === 'personal');
+      document.getElementById('rp-tab-orders').classList.toggle('on', t === 'orders');
+      if (t === 'orders') { rpOrdersRender(); if (!rnLoaded) rnLoad(true); }
+    }
+    function rpOrdersRefresh() { if (rpTabNow === 'orders' && document.getElementById('page-rider-detail').classList.contains('active')) rpOrdersRender(); }
+    function rpOrdersRender() {
+      const o = document.getElementById('rp-sec-orders'); if (!o) return;
+      const x = allRiders.find(r => String(r.partnerId) === String(rpPid)); if (!x) return;
+      const mine = rnEvents.filter(e => String(e.partnerId) === String(x.partnerId) || (x.mobile && String(e.riderMobile) === String(x.mobile)));
+      const c = rnCounts(mine), l = mine.filter(e => rpOF === 'all' || rnGroup(e) === rpOF);
+      const earn = mine.filter(e => rnGroup(e) === 'delivered').reduce((a, e) => a + (Number(e.earn) || 0), 0);
+      o.innerHTML = `<div class="section-card" style="margin-bottom:.7rem"><div class="section-head"><h3><i class="fa fa-box"></i> Order Details <small style="color:var(--muted);font-weight:600">(${l.length})</small></h3>
+        <select class="rk-sel" onchange="rpOF=this.value;rpOrdersRender()">${RN_TABS.map(f => `<option value="${f[0]}" ${rpOF === f[0] ? 'selected' : ''}>${f[1]}</option>`).join('')}</select></div>
+        <div class="rn-stats"><div class="rk-stat"><b>${c.all}</b><span>Requests</span></div><div class="rk-stat"><b>${c.accepted + c.delivered}</b><span>Accepted</span></div><div class="rk-stat"><b>${c.delivered}</b><span>Delivered</span></div><div class="rk-stat"><b>${c.rejected}</b><span>Rejected</span></div><div class="rk-stat"><b>${c.noresp}</b><span>Not accepted</span></div><div class="rk-stat"><b>₹${earn}</b><span>Earned</span></div></div>
+        <div style="padding:.8rem 1rem 1rem;display:flex;flex-direction:column;gap:.6rem">${l.length ? l.map(e => rnCard(e, { noRider: 1 })).join('') : '<div style="color:var(--muted);font-size:.85rem">' + (rnLoaded ? 'Is rider ke koi orders nahi mile' : 'Loading...') + '</div>'}</div></div>`;
+    }
+
+    function openRiderProfile(id) {
+      const x = allRiders.find(r => String(r.partnerId) === String(id)); if (!x) return;
+      const d = x.details || {}, st = rcStat(x), pid = rcEsc(x.partnerId);
+      const v = a => rcEsc(Array.isArray(a) ? a.join(', ') : a) || '—';
+      const grp = (icon, title, rows) => `<div class="section-card" style="margin-bottom:.7rem"><div class="section-head"><h3><i class="fa ${icon}"></i> ${title}</h3></div><table class="rc-tbl">${rows.map(r => `<tr><td>${r[0]}</td><td>${v(r[1])}</td></tr>`).join('')}</table></div>`;
+      const btn = (fn, l, c) => `<button class="btn ${c} btn-sm" onclick="${fn}">${l}</button>`;
+      let acts = '';
+      if (st === 'pending') acts += btn(`rpAct(setRiderStatus,'${pid}','approved')`, 'Approve', 'btn-success') + btn(`rpAct(setRiderStatus,'${pid}','rejected')`, 'Reject', 'btn-warn');
+      else if (st === 'approved') acts += btn(`rpAct(setRiderStatus,'${pid}','blocked')`, 'Block', 'btn-danger');
+      else acts += btn(`rpAct(setRiderStatus,'${pid}','approved')`, st === 'blocked' ? 'Unblock' : 'Approve', 'btn-success');
+      if (Number(x.cashPending) > 0) acts += btn(`rpAct(riderDeposit,'${pid}')`, 'Cash mila', 'btn-primary');
+      if (Number(x.earningsUnpaid) > 0) acts += btn(`rpAct(riderPayout,'${pid}',${Number(x.earningsUnpaid)})`, 'Payout diya', 'btn-primary');
+      acts += btn(`riderMessage('${pid}')`, '<i class="fa fa-comment"></i> Message', 'btn-secondary') + btn(`rpDelete('${pid}')`, '<i class="fa fa-trash"></i> Delete', 'btn-danger');
+      document.getElementById('rp-body').innerHTML =
+        `<button class="btn btn-secondary btn-sm" style="margin-bottom:.7rem" onclick="showPage('rider')"><i class="fa fa-arrow-left"></i> Back</button>
+        <div class="section-card" style="margin-bottom:.7rem"><div class="rc-prof-head">${rcAvatar(x)}<div class="rc-info"><b style="font-size:1.1rem">${rcEsc(x.name) || 'Rider'}</b><small>${pid}</small><div style="margin-top:.35rem">${rcLive(x)} <span class="rc-pill" style="color:var(--muted)">${rcEsc(st)}</span></div></div></div>
+        <div class="rc-body rc-acts" style="padding-top:0">${acts}</div></div>` +
+        `<div class="rp-tabs"><button type="button" id="rp-tab-personal" class="rp-tab on" onclick="rpTab('personal')"><i class="fa fa-user"></i> Personal Details</button><button type="button" id="rp-tab-orders" class="rp-tab" onclick="rpTab('orders','${pid}')"><i class="fa fa-box"></i> Order Details</button></div><div id="rp-sec-personal">` +
+        `<div class="section-card" style="margin-bottom:.7rem"><div class="section-head"><h3><i class="fa fa-chart-simple"></i> Performance</h3>
+          <select class="rk-sel" onchange="rcSetPerf('${pid}', this.value)">${RC_PERIODS.map(p => `<option value="${p[0]}" ${rcPerf === p[0] ? 'selected' : ''}>${p[1]}</option>`).join('')}</select></div>
+          <div id="rp-perf-body">${rcPerfHtml(x)}</div></div>` +
+        grp('fa-user', 'Personal Information', [['Full Name', x.name], ['Mobile Number', x.mobile], ['Alternate Mobile', d.altMobile], ['Date of Birth', d.dob], ['Aadhar Number', d.aadhar], ['Current Address', d.curAddr], ['Permanent Address', d.permAddr], ['Preferred Language', d.langs]]) +
+        grp('fa-motorcycle', 'Vehicle Details', [['Vehicle Type', x.vehicle], ['Vehicle Number', d.vehicleNumber], ['Carrying Capacity', d.capacity]]) +
+        grp('fa-building-columns', 'Payment Details', [['Account Holder', d.accHolder], ['Bank Account No.', d.accNum]]) +
+        grp('fa-clock', 'Availability', [['Working Hours', d.hours], ['Available Days', d.days]]) +
+        grp('fa-shield-halved', 'Registration', [['Partner ID', x.partnerId], ['Joined', d.joinDate], ['Rules accepted', d.agreed ? 'Yes' : d.agreed === false ? 'No' : '']]) +
+        (true ? `<div class="section-card rk-approve-card"><div class="rc-body">
+          <div style="font-weight:800;margin-bottom:.3rem"><i class="fa fa-user-check" style="color:var(--success)"></i> Rider Approval</div>
+          <p style="font-size:.78rem;color:var(--muted);margin:0 0 .8rem">Upar ki saari details check kar lein. Right side ke dropdown (▼) se Approve, Reject ya Block chunein, phir button dabayein.</p>
+          ${rkSplitHtml(pid, st)}</div></div>` : '') + '</div><div id="rp-sec-orders" style="display:none"></div>';
+      rpTabNow = 'personal'; rpPid = String(x.partnerId);
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-rider-detail').classList.add('active');
+      document.getElementById('topbar-title').textContent = 'Rider Profile';
+      window.scrollTo(0, 0);
+    }
+    // ---- Approve / Reject / Block split button (dropdown se chuno, phir click) ----
+    const RK_OPT = {
+      approved: ['Approve Rider', 'fa-circle-check', 'rk-c-approve'],
+      rejected: ['Reject Rider', 'fa-circle-xmark', 'rk-c-reject'],
+      blocked: ['Block Rider', 'fa-ban', 'rk-c-block']
+    };
+    function rkSplitHtml(pid, st) {
+      const def = st === 'approved' ? 'blocked' : 'approved', o = RK_OPT[def];
+      const items = Object.keys(RK_OPT).map(k => `<button type="button" class="rk-m-${k}" onclick="rkSplitPick('${k}')"><i class="fa ${RK_OPT[k][1]}"></i> ${RK_OPT[k][0].replace(' Rider', '')}</button>`).join('');
+      return `<div class="rk-split" id="rk-split" data-pid="${pid}" data-sel="${def}">
+        <button type="button" class="rk-split-main ${o[2]}" id="rk-split-main" onclick="rkSplitGo()"><i class="fa ${o[1]}" id="rk-split-ic"></i> <span id="rk-split-lbl">${o[0]}</span></button>
+        <button type="button" class="rk-split-arrow ${o[2]}" id="rk-split-arrow" onclick="rkSplitToggle(event)" aria-label="Action chunein"><i class="fa fa-chevron-down"></i></button>
+        <div class="rk-split-menu" id="rk-split-menu">${items}</div></div>`;
+    }
+    function rkSplitToggle(e) { e.stopPropagation(); document.getElementById('rk-split-menu').classList.toggle('open'); }
+    function rkSplitPick(k) {
+      const s = document.getElementById('rk-split'); if (!s) return;
+      s.dataset.sel = k; const o = RK_OPT[k];
+      ['rk-split-main', 'rk-split-arrow'].forEach(id => {
+        const b = document.getElementById(id);
+        b.classList.remove('rk-c-approve', 'rk-c-reject', 'rk-c-block'); b.classList.add(o[2]);
+      });
+      document.getElementById('rk-split-ic').className = 'fa ' + o[1];
+      document.getElementById('rk-split-lbl').textContent = o[0];
+      document.getElementById('rk-split-menu').classList.remove('open');
+    }
+    function rkSplitGo() {
+      const s = document.getElementById('rk-split'); if (!s) return;
+      const x = allRiders.find(r => String(r.partnerId) === String(s.dataset.pid));
+      if (x && rcStat(x) === s.dataset.sel) return showToast('Rider pehle se ' + s.dataset.sel + ' hai', 'info');
+      rpAct(setRiderStatus, s.dataset.pid, s.dataset.sel);
+    }
+    document.addEventListener('click', () => { const m = document.getElementById('rk-split-menu'); if (m) m.classList.remove('open'); });
+
+    async function rpAct(fn, ...args) {
+      if (String(args[0]).startsWith('DEMO-')) {
+        if (fn === setRiderStatus) { await fn(...args); openRiderProfile(args[0]); } else rcDemo(args[0]);
+        return;
+      }
+      await fn(...args); await new Promise(r => setTimeout(r, 1600)); await loadRiderPage();
+      if (document.getElementById('page-rider-detail').classList.contains('active')) openRiderProfile(args[0]);
+    }
+    async function rpDelete(id) {
+      if (rcDemo(id)) return;
+      if (!confirm('Rider ' + id + ' ko permanently delete karna hai? Ye wapas nahi hoga.')) return;
+      await postToSheet({ action: 'deleteRider', partnerId: id });
+      showToast('Rider delete ho gaya', 'success'); setTimeout(() => showPage('rider'), 1200);
+    }
+
+    function rcToggle(card) {
+      const open = !card.classList.contains('rc-open');
+      document.querySelectorAll('#page-rider .section-card').forEach(c => c.classList.remove('rc-open'));
+      if (open) { card.classList.add('rc-open'); card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+    }
+    document.querySelectorAll('#page-rider .section-card').forEach(card => {
+      const head = card.querySelector('.section-head');
+      head.insertAdjacentHTML('beforeend', '<i class="fa fa-chevron-down rc-chev"></i>');
+      head.addEventListener('click', e => { if (!e.target.closest('button,input,select,a')) rcToggle(card); });
+    });
+    const RC_NUM = ['pct', 'min', 'cap', 'perkm', 'bonus-n', 'bonus-amt', 'timeout', 'maxkm', 'maxactive', 'codlimit'];
+    const RC_BOOL = ['autoblock', 'codallow', 'appon', 'regopen', 'otp', 'allowrej', 'showcall'];
+    const rcEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    function rcFill(st) {
+      if (!st) return;
+      RC_NUM.forEach(k => { if (st[k] != null) document.getElementById('rc-' + k).value = st[k]; });
+      RC_BOOL.forEach(k => { if (st[k] != null) document.getElementById('rc-' + k).checked = !!st[k]; });
+      if (st.mode) document.getElementById('rc-mode').value = st.mode;
+      if (st.phone != null) document.getElementById('rc-phone').value = st.phone;
+      if (st.announce != null) document.getElementById('rc-announce').value = st.announce;
+      if (st.rules) document.getElementById('rc-rules').value = [].concat(st.rules).join('\n');
+    }
+
+        const RC_CACHE = 'rm_riders_cache_v2';
+    let allRiders = [], ridersLoaded = false, ridersFresh = false, ridersErr = false, ridersPromise = null;
+    // pichli baar ka rider data turant dikhane ke liye (photo cache me nahi rakhte)
+    try {
+      const c = JSON.parse(localStorage.getItem(RC_CACHE) || 'null');
+      if (c && Array.isArray(c.riders) && c.riders.length) { allRiders = c.riders; ridersLoaded = true; }
+    } catch (e) { }
+    function ridersSave() {
+      try {
+        localStorage.setItem(RC_CACHE, JSON.stringify({ t: Date.now(), riders: allRiders.map(x => Object.assign({}, x, { details: Object.assign({}, x.details || {}, { photo: '' }) })) }));
+      } catch (e) { }
+    }
+    function fetchRidersOnce() {
+      if (ridersPromise) return ridersPromise;
+      ridersPromise = (async () => {
+        for (let t = 0; t < 4; t++) {
+          const ac = new AbortController(), to = setTimeout(() => ac.abort(), 30000);
+          try {
+            const r = await fetch(SCRIPT_URL + '?action=getRiders&adminToken=' + encodeURIComponent(adminToken), { signal: ac.signal });
+            const d = await r.json();
+            if (d && Array.isArray(d.riders)) {
+              clearTimeout(to);
+              allRiders = d.riders; ridersLoaded = true; ridersFresh = true; ridersErr = false; ridersSave();
+              return true;
+            }
+          } catch (e) { }
+          clearTimeout(to);
+          await new Promise(res => setTimeout(res, 1500));
+        }
+        return false;
+      })().finally(() => { ridersPromise = null; });
+      return ridersPromise;
+    }
+    async function loadRiderPage() {
+      const cardsEl = document.getElementById('rider-cards');
+      ridersErr = false;
+      if (!ridersLoaded) {
+        if (cardsEl) cardsEl.innerHTML = '<div class="loading-row" style="padding:1rem;text-align:center;color:var(--muted)"><div class="spin" style="width:16px;height:16px;display:inline-block;vertical-align:middle"></div> Riders load ho rahe hain...</div>';
+        const rb = document.getElementById('rider-body');
+        if (rb) rb.innerHTML = '<tr class="loading-row"><td colspan="9">Loading...</td></tr>';
+      } else {
+        renderRiders(allRiders); rcApplyFilter();   // purana data turant dikhao, niche se fresh aa jayega
+      }
+      fetch(SCRIPT_URL + '?action=getRiderSettings&adminToken=' + encodeURIComponent(adminToken))
+        .then(r => r.json()).then(d => rcFill(d.settings)).catch(() => { });
+      const ok = await fetchRidersOnce();
+      if (!ok) {
+        ridersErr = true;
+        showToast('Riders load nahi hue, dobara try karo', 'error');
+        if (!ridersLoaded) {
+          if (cardsEl) cardsEl.innerHTML = '<div class="loading-row" style="padding:1rem;text-align:center;color:var(--danger)">Riders load nahi hue. <button type="button" class="rk-btn" style="margin-top:.6rem" onclick="loadRiderPage()"><i class="fa fa-rotate"></i> Dobara try karo</button></div>';
+          return;
+        }
+      }
+      renderRiders(allRiders);
+      rcApplyFilter();
+    }
+    function renderRiders(list) {
+      const b = document.getElementById('rider-body');
+      if (!list.length) { b.innerHTML = '<tr class="loading-row"><td colspan="9">Abhi koi rider registered nahi hai</td></tr>'; return; }
+      const dutyCol = { online: 'var(--success)', busy: 'var(--danger)', offline: 'var(--muted)' };
+      b.innerHTML = list.map(x => {
+        const id = rcEsc(x.partnerId), st = String(x.status || 'pending').toLowerCase(), duty = String(x.duty || 'offline').toLowerCase();
+        const act = (s2, l, c) => `<button class="btn ${c} btn-sm" onclick="setRiderStatus('${id}','${s2}')">${l}</button>`;
+        let a = `<button class="btn btn-secondary btn-sm" onclick="openRiderDetail('${id}')"><i class="fa fa-eye"></i> Details</button>`;
+        if (st === 'pending') a += act('approved', 'Approve', 'btn-success') + act('rejected', 'Reject', 'btn-warn');
+        else if (st === 'approved') a += act('blocked', 'Block', 'btn-danger');
+        else a += act('approved', st === 'blocked' ? 'Unblock' : 'Approve', 'btn-success');
+        if (Number(x.cashPending) > 0) a += `<button class="btn btn-primary btn-sm" onclick="riderDeposit('${id}')">Cash mila</button>`;
+        if (Number(x.earningsUnpaid) > 0) a += `<button class="btn btn-primary btn-sm" onclick="riderPayout('${id}', ${Number(x.earningsUnpaid)})">Payout diya</button>`;
+        a += `<button class="btn btn-secondary btn-sm" onclick="riderMessage('${id}')"><i class="fa fa-comment"></i></button>`;
+        a += `<button class="btn btn-danger btn-sm" onclick="deleteRider('${id}')"><i class="fa fa-trash"></i></button>`;
+        return `<tr><td>${id}</td><td><b>${rcEsc(x.name)}</b><br><small>${rcEsc(x.mobile)}</small></td><td>${rcEsc(x.vehicle)}</td>
+          <td>${rcEsc(st)}</td><td><b style="color:${dutyCol[duty] || 'var(--muted)'}">&#9679; ${rcEsc(duty)}</b></td>
+          <td>${rcEsc(x.deliveries || 0)}</td><td>₹${rcEsc(x.earnings || 0)} <small>(₹${rcEsc(x.earningsUnpaid || 0)})</small></td><td>₹${rcEsc(x.cashPending || 0)}</td>
+          <td><div class="rc-acts">${a}</div></td></tr>`;
+      }).join('');
+    }
+
+    function openRiderDetail(id) { rcPerf = 'all'; openRiderProfile(id); }
+
+    async function riderPayout(id, amt) {
+      if (rcDemo(id)) return;
+      if (!confirm('Rider ' + id + ' ko ₹' + amt + ' kamai ka payout de diya? Confirm karein.')) return;
+      await postToSheet({ action: 'confirmRiderPayout', partnerId: id, amount: amt });
+      showToast('Payout record ho gaya', 'success'); setTimeout(loadRiderPage, 1200);
+    }
+
+    async function riderMessage(id) {
+      if (rcDemo(id)) return;
+      const t = prompt(id ? 'Rider ' + id + ' ko message:' : 'Saare riders ko message:');
+      if (!t || !t.trim()) return;
+      await postToSheet({ action: 'sendRiderMessage', partnerId: id, text: t.trim() });
+      showToast('Message bhej diya', 'success');
+    }
+
+    async function deleteRider(id) {
+      if (rcDemo(id)) return;
+      if (!confirm('Rider ' + id + ' ko permanently delete karna hai? Ye wapas nahi hoga.')) return;
+      await postToSheet({ action: 'deleteRider', partnerId: id });
+      showToast('Rider delete ho gaya', 'success'); setTimeout(loadRiderPage, 1200);
+    }
+
+    let rcIssues = [];
+    function rcDemoIssues() {
+      const t = ['Customer unavailable', 'Wrong address', 'Customer phone not reachable', 'Item damaged', 'Payment dispute', 'Vehicle breakdown', 'Heavy rain delay'], r = ['Ramesh Kumar', 'Suresh Meena', 'Mohit Sharma'];
+      return t.map((x, i) => ({ id: 'DEMO-I' + (i + 1), time: '2026-10-0' + (3 - Math.floor(i / 2)) + ' ' + (10 + i) + ':20', rider: r[i % 3], orderId: String(1090 - i * 4), issue: x, resolved: i > 2 }));
+    }
+    function renderIssues() {
+      const b = document.getElementById('rider-issues-body'), list = rcIssues;
+      b.innerHTML = list.length ? list.slice(0, 5).map(i => `<tr><td>${rcEsc(i.time)}</td><td>${rcEsc(i.rider)}</td><td>#${rcEsc(i.orderId)}</td><td>${rcEsc(i.issue)}</td>
+          <td>${i.resolved ? '<small>Resolved</small>' : `<button class="btn btn-success btn-sm" onclick="resolveRiderIssue('${rcEsc(i.id)}')">Resolved</button>`}</td></tr>`).join('') +
+        (list.length > 5 ? `<tr><td colspan="5" style="text-align:center"><button class="rk-btn" style="width:auto;padding:.6rem 1.4rem;display:inline-flex" onclick="rhOpen('issues')">See All (${list.length}) <i class="fa fa-arrow-right"></i></button></td></tr>` : '')
+        : '<tr class="loading-row"><td colspan="5">Koi issue report nahi hai</td></tr>';
+      if (document.getElementById('page-rider-hist').classList.contains('active')) rhRender();
+    }
+    async function loadRiderIssues() {
+      try {
+        const r = await fetch(SCRIPT_URL + '?action=getRiderIssues&adminToken=' + encodeURIComponent(adminToken));
+        rcIssues = (await r.json()).issues || [];
+      } catch (e) { rcIssues = []; }
+      if (!rcIssues.length && allRiders.some(x => String(x.partnerId).startsWith('DEMO-'))) rcIssues = rcDemoIssues();
+      renderIssues();
+    }
+
+    async function resolveRiderIssue(id) {
+      if (String(id).startsWith('DEMO-I')) {
+        const i = rcIssues.find(x => x.id === id); if (i) i.resolved = true;
+        showToast('Issue resolved (demo)', 'success'); renderIssues(); return;
+      }
+      await postToSheet({ action: 'resolveRiderIssue', issueId: id });
+      showToast('Issue resolved', 'success'); setTimeout(loadRiderIssues, 1000);
+    }
+
+    async function loadRiderReport() {
+      const f = document.getElementById('rr-from').value, t = document.getElementById('rr-to').value, b = document.getElementById('rider-report-body');
+      if (!f || !t) return showToast('From aur To date chunein', 'error');
+      try {
+        const r = await fetch(SCRIPT_URL + '?action=getRiderReport&from=' + f + '&to=' + t + '&adminToken=' + encodeURIComponent(adminToken));
+        const d = await r.json(), list = d.report || [];
+        b.innerHTML = list.length ? list.map(x => `<tr><td><b>${rcEsc(x.name)}</b><br><small>${rcEsc(x.partnerId)}</small></td><td>${rcEsc(x.deliveries || 0)}</td><td>₹${rcEsc(x.earnings || 0)}</td><td>${rcEsc(x.rejected || 0)}</td><td>${rcEsc(x.km || 0)}</td></tr>`).join('')
+          : '<tr class="loading-row"><td colspan="5">Is period me koi data nahi</td></tr>';
+      } catch (e) { b.innerHTML = '<tr class="loading-row"><td colspan="5" style="color:var(--danger)">Report load nahi hui</td></tr>'; }
+    }
+
+    async function ensureRiders() {
+      if (ridersLoaded) return true;
+      return await fetchRidersOnce();
+    }
+    let assignOrderId = null, assignPid = '', assignList = [];
+    function rcAssignRender() {
+      document.getElementById('assign-rider-list').innerHTML = (ridersFresh ? '' : '<div style="font-size:.72rem;color:var(--muted);padding:.2rem .3rem">⏳ Online/offline status update ho raha hai...</div>') + assignList.map(x => {
+        const id = rcEsc(x.partnerId), on = assignPid === String(x.partnerId);
+        return `<button type="button" class="rk-pick ${on ? 'on' : ''}" style="${rcDuty(x) === 'offline' ? 'opacity:.75' : ''}" onclick="rcAssignPick('${id}')">
+          ${rcAvatar(x)}<span class="rk-main"><b>${rcEsc(x.name) || 'Rider'}</b><span class="rk-sub">${id} &middot; ${rcEsc(x.vehicle) || '—'}</span><span>${rcLive(x)}</span></span>
+          <i class="fa ${on ? 'fa-circle-check' : 'fa-circle'}" style="font-size:1.3rem;color:${on ? 'var(--accent)' : 'var(--border)'}"></i></button>`;
+      }).join('');
+    }
+    function rcAssignPick(id) { assignPid = String(id); rcAssignRender(); }
+        function assignBuild() {
+      const listEl = document.getElementById('assign-rider-list');
+      const ok = allRiders.filter(r => String(r.status).toLowerCase() === 'approved');
+      if (!ok.length) { assignList = []; listEl.innerHTML = '<div style="padding:1.2rem;text-align:center;color:var(--muted)">Koi approved rider nahi hai</div>'; return; }
+      assignList = ok.sort((p, q) => ({ online: 0, busy: 1 }[rcDuty(p)] ?? 2) - ({ online: 0, busy: 1 }[rcDuty(q)] ?? 2));
+      rcAssignRender();
+    }
+    async function openAssignRider(orderId) {
+      assignOrderId = orderId; assignPid = '';
+      document.getElementById('assign-order-label').textContent = 'Order #' + orderId + ' ke liye rider chunein';
+      const listEl = document.getElementById('assign-rider-list');
+      document.getElementById('rider-assign-modal').classList.add('open');   // popup turant khulega, band nahi hoga
+      ridersFresh = false;
+      if (ridersLoaded) assignBuild();   // purana data turant, niche se fresh status aayega
+      else listEl.innerHTML = '<div style="padding:1.2rem;text-align:center;color:var(--muted)"><div class="spin" style="width:18px;height:18px;display:inline-block;vertical-align:middle"></div> Riders load ho rahe hain...</div>';
+      const ok = await fetchRidersOnce();
+      if (assignOrderId !== orderId || !document.querySelector('#rider-assign-modal.open')) return;   // beech me band kar diya
+      if (!ok && !ridersLoaded) {
+        listEl.innerHTML = '<div style="padding:1.2rem;text-align:center;color:var(--danger)">Riders load nahi hue.<br><button type="button" class="rk-btn" style="margin-top:.6rem" onclick="openAssignRider(\'' + String(orderId).replace(/'/g, "\\'") + '\')"><i class="fa fa-rotate"></i> Dobara try karo</button></div>';
+        return;
+      }
+      assignBuild();
+    }
+      async function confirmAssignRider() {
+      const pid = assignPid; if (!pid) return showToast('Pehle rider chunein', 'error'); if (!assignOrderId) return;
+      showToast('Assign ho raha hai...', 'info');
+      try {
+        const r = await fetch(SCRIPT_URL + '?action=assignOrderRider&orderId=' + encodeURIComponent(assignOrderId) + '&partnerId=' + encodeURIComponent(pid) + '&adminToken=' + encodeURIComponent(adminToken));
+        const d = await r.json();
+        if (d.error) return showToast('Error: ' + d.error, 'error');
+        if (!d.success) return showToast(d.message || 'Assign nahi ho paya', 'error');
+        closeModal('rider-assign-modal');
+        showToast('Rider ko order bhej diya. Rider ke app me offer dikhega', 'success');
+        setTimeout(() => loadOrders(true), 1200); setTimeout(() => rnLoad(true), 2500);
+      } catch (e) { showToast('Network problem, dobara try karo', 'error'); }
+    }
+
+    // ---------- CUSTOMER RATING & REWARD ----------
+    // GAS actions: getRatingSettings, saveRatingSettings, getRatingsAdmin, setRatingExcluded
+    const RT_DEF = { enabled: true, r5: 500, r4: 300, r3: 100, minDeliveries: 30, minRatings: 5, rounding: 'round', label: '', tipEnabled: true, tipPresets: [10, 20, 30, 50, 100] };
+    const RT_STATUS = { 5: '🏆 5-Star Partner', 4: '🥇 4-Star Partner', 3: '🥈 3-Star Partner' };
+    let rtSettings = Object.assign({}, RT_DEF), rtData = { ratings: [], tips: [], deliveries: {} };
+    function rtFill(st) {
+      st = Object.assign({}, RT_DEF, st || {}); rtSettings = st;
+      document.getElementById('rt-enabled').checked = !!st.enabled;
+      document.getElementById('rt-r5').value = st.r5; document.getElementById('rt-r4').value = st.r4; document.getElementById('rt-r3').value = st.r3;
+      document.getElementById('rt-mindel').value = st.minDeliveries; document.getElementById('rt-minrat').value = st.minRatings;
+      document.getElementById('rt-round').value = st.rounding; document.getElementById('rt-label').value = st.label || '';
+      document.getElementById('rt-tip-enabled').checked = st.tipEnabled !== false;
+      document.getElementById('rt-tip-presets').value = (Array.isArray(st.tipPresets) ? st.tipPresets : String(st.tipPresets || '').split(',')).join(', ');
+    }
+    function rtCalc(ratings, deliveries, st) {
+      st = Object.assign({}, RT_DEF, st || {});
+      const c = ratings.filter(x => !x.excluded), dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      c.forEach(x => { if (dist[x.stars] != null) dist[x.stars]++; });
+      const n = c.length, avg = n ? c.reduce((p, x) => p + x.stars, 0) / n : 0;
+      const whole = !n ? 0 : (st.rounding === 'floor' ? Math.floor(avg) : Math.round(avg));
+      const needD = Math.max(0, st.minDeliveries - deliveries), needR = Math.max(0, st.minRatings - n);
+      const eligible = !!st.enabled && needD === 0 && needR === 0;
+      const reward = eligible ? ({ 5: +st.r5, 4: +st.r4, 3: +st.r3 }[whole] || 0) : 0;
+      return { n, avg, whole, dist, needD, needR, eligible, reward };
+    }
+    async function loadRatingSettings() {
+      try { const r = await fetch(SCRIPT_URL + '?action=getRatingSettings&adminToken=' + encodeURIComponent(adminToken)); rtFill((await r.json()).settings); }
+      catch (e) { rtFill(null); }
+    }
+    async function saveRatingSettings() {
+      const g = id => document.getElementById(id), num = id => Math.max(0, parseFloat(g(id).value) || 0);
+      const st = { enabled: g('rt-enabled').checked, r5: num('rt-r5'), r4: num('rt-r4'), r3: num('rt-r3'),
+        minDeliveries: Math.floor(num('rt-mindel')), minRatings: Math.max(1, Math.floor(num('rt-minrat'))), rounding: g('rt-round').value, label: g('rt-label').value.trim(),
+        tipEnabled: g('rt-tip-enabled').checked, tipPresets: g('rt-tip-presets').value.split(',').map(x => Math.floor(Number(x.trim()))).filter(x => x >= 1 && x <= 5000).slice(0, 6) };
+      if (!st.tipPresets.length) st.tipPresets = [10, 20, 30, 50, 100];
+      if (st.r4 > st.r5 || st.r3 > st.r4) return showToast('Reward 5★ ≥ 4★ ≥ 3★ hona chahiye', 'error');
+      await postToSheet({ action: 'saveRatingSettings', settings: st });
+      rtSettings = st; showToast('Rating settings save ho gayi', 'success');
+      if (document.getElementById('rt-month').value) loadRatingReport();
+    }
+    function rtRiderName(id) { const x = allRiders.find(r => String(r.partnerId) === String(id)); return x ? x.name : id; }
+    async function loadRatingReport() {
+      const m = document.getElementById('rt-month').value; if (!m) return showToast('Mahina chunein', 'error');
+      const sb = document.getElementById('rt-summary-body'), lb = document.getElementById('rt-list-body');
+      sb.innerHTML = '<tr class="loading-row"><td colspan="11">Loading...</td></tr>';
+      try {
+        const r = await fetch(SCRIPT_URL + '?action=getRatingsAdmin&month=' + m + '&adminToken=' + encodeURIComponent(adminToken));
+        const d = await r.json();
+        rtData = { ratings: (d.ratings || []).map(x => Object.assign({}, x, { stars: +x.stars, excluded: !!x.excluded })), tips: (d.tips || []).map(x => Object.assign({}, x, { amount: +x.amount || 0, paidToRider: !!x.paidToRider })), deliveries: d.deliveries || {} };
+        if (d.settings) rtSettings = Object.assign({}, RT_DEF, d.settings);
+      } catch (e) { sb.innerHTML = '<tr class="loading-row"><td colspan="11" style="color:var(--danger)">Ratings load nahi hui</td></tr>'; return; }
+      rtRender();
+    }
+    function rtRender() {
+      const sb = document.getElementById('rt-summary-body'), lb = document.getElementById('rt-list-body');
+      const ids = Array.from(new Set(Object.keys(rtData.deliveries).concat(rtData.ratings.map(x => String(x.partnerId || '')).filter(Boolean)).concat(rtData.tips.map(x => String(x.partnerId || '')).filter(Boolean))));
+      ids.sort((p, q) => (rtData.deliveries[q] || 0) - (rtData.deliveries[p] || 0));
+      sb.innerHTML = ids.length ? ids.map(id => {
+        const mine = rtData.ratings.filter(x => String(x.partnerId) === id), del = +rtData.deliveries[id] || 0, c = rtCalc(mine, del, rtSettings);
+        const status = c.whole >= 3 ? RT_STATUS[c.whole] : (c.n ? '—' : 'No ratings');
+        const tp = rtData.tips.filter(t => String(t.partnerId) === id), tsum = tp.reduce((p, t) => p + t.amount, 0);
+        let why = ''; if (!c.eligible && c.n) why = '<br><small style="color:var(--muted)">' + (!rtSettings.enabled ? 'Reward band' : [c.needD ? c.needD + ' deliveries baaki' : '', c.needR ? c.needR + ' ratings baaki' : ''].filter(Boolean).join(', ')) + '</small>';
+        return '<tr><td><b>' + rcEsc(rtRiderName(id)) + '</b><br><small>' + rcEsc(id) + '</small></td><td>' + del + '</td><td>' + c.dist[5] + '</td><td>' + c.dist[4] + '</td><td>' + c.dist[3] + '</td><td>' + c.dist[2] + '</td><td>' + c.dist[1] + '</td>' +
+          '<td>' + (c.n ? c.avg.toFixed(2) + ' <small>(' + c.whole + '★)</small>' : '—') + '</td><td>' + status + why + '</td><td><b>₹' + c.reward + '</b></td><td>' + (tp.length ? '<b>₹' + tsum + '</b><br><small>' + tp.length + ' tip</small>' : '—') + '</td></tr>';
+      }).join('') : '<tr class="loading-row"><td colspan="11">Is mahine koi data nahi</td></tr>';
+      const TAG = { polite: 'Polite', communication: 'Good Communication', careful: 'Careful Handling', ontime: 'On-Time', respectful: 'Respectful', rude: 'Rude Behaviour', language: 'Bad Language', poor_comm: 'Poor Communication', handling: 'Order Handling', delivery: 'Delivery Problem', other: 'Other' };
+      const list = rtData.ratings.slice().sort((p, q) => (q.ts || 0) - (p.ts || 0)).slice(0, 50);
+      lb.innerHTML = list.length ? list.map(x => {
+        const tags = (x.tags || []).map(t => TAG[t] || t).join(', ') || '—', t = x.ts ? new Date(+x.ts).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+        const cust = (x.customerName ? '<b>' + rcEsc(x.customerName) + '</b><br>' : '') + '<small>' + rcEsc(x.phone || '') + '</small>';
+        const rev = x.comment ? '<div style="max-width:240px;white-space:normal;word-break:break-word">“' + rcEsc(x.comment) + '”</div>' : '<small style="color:var(--muted)">—</small>';
+        return '<tr><td>' + rcEsc(t) + '</td><td>' + cust + '</td><td>' + rcEsc(rtRiderName(x.partnerId)) + '</td><td>#' + rcEsc(x.orderId) + '</td><td><b style="color:#d98a00">' + '★'.repeat(x.stars) + '</b></td><td>' + rcEsc(tags) + '</td><td>' + rev + '</td>' +
+          '<td>' + (x.excluded ? '<small style="color:var(--danger)">Nahi' + (x.excludeReason ? '<br>' + rcEsc(x.excludeReason) : '') + '</small>' : '<small style="color:var(--success)">Haan</small>') + '</td>' +
+          '<td><button class="btn btn-secondary btn-sm" onclick="setRatingExcluded(\'' + rcEsc(x.ratingId) + '\',' + (x.excluded ? 'false' : 'true') + ')">' + (x.excluded ? 'Count karo' : 'Rider ki galti nahi') + '</button></td></tr>';
+      }).join('') : '<tr class="loading-row"><td colspan="9">Koi rating nahi</td></tr>';
+      rtRenderTips();
+    }
+    // ===== Section 14: rider-wise tips (Tip Do / Details) =====
+    let tpAll = { tips: [], returns: [] }, tpActive = null;
+    async function loadTipsAll() {
+      try {
+        const r = await fetch(SCRIPT_URL + '?action=getTipsAdmin&adminToken=' + encodeURIComponent(adminToken));
+        const d = await r.json();
+        if (d && d.tips) tpAll = { tips: d.tips.map(x => Object.assign({}, x, { amount: +x.amount || 0 })), returns: (d.returns || []).map(x => Object.assign({}, x, { amount: +x.amount || 0 })) };
+      } catch (e) { }
+      rtRenderTips();
+      const dm = document.getElementById('tip-detail-modal');
+      if (dm && dm.classList.contains('open') && tpActive) tpOpen(tpActive);
+    }
+    const tpMonth = () => (document.getElementById('rt-month') || {}).value || '';
+    const tpInMonth = ts => { const m = tpMonth(); if (!m) return true; if (!ts) return false; const d = new Date(+ts); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') === m; };
+    const tpWhen = ts => ts ? new Date(+ts).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+    function tpStat(pid) {
+      const mine = tpAll.tips.filter(t => String(t.partnerId) === String(pid)), rets = tpAll.returns.filter(r => String(r.partnerId) === String(pid));
+      const sum = (a, f) => a.filter(f).reduce((s, t) => s + t.amount, 0);
+      const online = sum(mine, t => t.method !== 'cash'), cash = sum(mine, t => t.method === 'cash'), legacy = sum(mine, t => t.method !== 'cash' && t.legacyPaid);
+      const returned = Math.round((legacy + rets.reduce((s, r) => s + r.amount, 0)) * 100) / 100;
+      return { mine, rets, online, cash, returned, baki: Math.max(0, Math.round((online - returned) * 100) / 100), monthTotal: sum(mine, t => tpInMonth(t.ts)) };
+    }
+    function rtRenderTips() {
+      const body = document.getElementById('tp-body'), cards = document.getElementById('tp-cards'); if (!body) return;
+      const q = (document.getElementById('tp-search').value || '').trim().toLowerCase();
+      const pids = Array.from(new Set(tpAll.tips.map(t => String(t.partnerId || '')).filter(Boolean)));
+      const stats = pids.map(id => ({ id, s: tpStat(id) }));
+      const mt = tpAll.tips.filter(t => tpInMonth(t.ts)), sm = f => mt.filter(f).reduce((p, t) => p + t.amount, 0);
+      const card = (l, v, c) => '<div style="border:1px solid rgba(128,128,128,.25);border-radius:12px;padding:.65rem .8rem"><div style="font-size:.7rem;color:var(--muted);font-weight:700">' + l + '</div><div style="font-size:1.25rem;font-weight:900;color:' + (c || 'inherit') + '">' + v + '</div></div>';
+      cards.innerHTML = card('Total tips (mahina)', '₹' + sm(() => true)) + card('Online tips (store ke paas)', '₹' + sm(t => t.method !== 'cash')) +
+        card('Rider ko diya (total)', '₹' + stats.reduce((a, x) => a + x.s.returned, 0)) + card('Rider ko dena baaki', '₹' + stats.reduce((a, x) => a + x.s.baki, 0), 'var(--danger)') +
+        card('Cash tips (rider ko seedha)', '₹' + sm(t => t.method === 'cash')) + card('Tip dene wale', new Set(mt.map(t => t.phone || t.customerName)).size);
+      const list = stats.filter(x => !q || (rtRiderName(x.id) + ' ' + x.id).toLowerCase().includes(q) || x.s.mine.some(t => (String(t.customerName) + ' ' + t.phone + ' ' + t.orderId).toLowerCase().includes(q)))
+        .sort((a, b) => b.s.baki - a.s.baki || b.s.monthTotal - a.s.monthTotal);
+      body.innerHTML = list.length ? list.map(x => {
+        const r = allRiders.find(z => String(z.partnerId) === x.id) || { name: rtRiderName(x.id), partnerId: x.id }, s = x.s, id = rcEsc(x.id);
+        return `<div class="rk-card"><div class="rk-row"><div class="rk-avwrap">${rcAvatar(r)}</div>
+          <div class="rk-main"><b>${rcEsc(r.name) || 'Rider'}</b><span class="rk-sub">${id}${r.vehicle ? ' &middot; ' + rcEsc(r.vehicle) : ''}</span></div>
+          <div class="rk-side"><span class="rcc-amt" style="color:${s.baki > 0 ? 'var(--accent)' : '#1e8a57'}">₹${s.baki}</span><span class="rk-sub">Baki</span></div></div>
+          <div class="rk-grid"><div><b>₹${s.monthTotal}</b><span>Is mahine ki tips</span></div><div><b>₹${s.returned}</b><span>Rider ko diya</span></div><div><b>₹${s.baki}</b><span>Baki</span></div></div>
+          <div style="display:flex;gap:.6rem"><button type="button" class="rk-btn fill" style="flex:1" ${s.baki > 0 ? '' : 'disabled'} onclick="tpOpenReturn('${id}')"><i class="fa fa-hand-holding-dollar"></i> Tip Do</button>
+            <button type="button" class="rk-btn" style="flex:1" onclick="tpOpen('${id}')">Details <i class="fa fa-arrow-right"></i></button></div></div>`;
+      }).join('') : '<div class="loading-row" style="padding:1rem;text-align:center;color:var(--muted)">Abhi koi tip nahi</div>';
+    }
+    function tpOpen(id) {
+      tpActive = id;
+      const r = allRiders.find(z => String(z.partnerId) === String(id)) || { name: rtRiderName(id), partnerId: id }, s = tpStat(id), pid = rcEsc(id);
+      const mt = s.mine.filter(t => tpInMonth(t.ts)).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+      const how = t => t.method === 'cash' ? '💵 Cash<small> · customer ne seedha rider ko diya</small>' : '📱 Online<small> · store ke paas aayi</small>';
+      document.getElementById('tp-detail-body').innerHTML = `
+        <div class="rc-prof-head">${rcAvatar(r)}<div class="rc-info"><b style="font-size:1.1rem">${rcEsc(r.name) || 'Rider'}</b><small>${pid}${r.vehicle ? ' &middot; ' + rcEsc(r.vehicle) : ''}</small></div></div>
+        <div class="rk-stats" style="padding:.6rem 0"><div class="rk-stat"><b>₹${s.online}</b><span>Online tips</span></div><div class="rk-stat"><b>₹${s.cash}</b><span>Cash tips</span></div><div class="rk-stat"><b style="color:#1e8a57">₹${s.returned}</b><span>Rider ko diya</span></div><div class="rk-stat"><b style="color:var(--accent)">₹${s.baki}</b><span>Baki</span></div></div>
+        <button type="button" class="rk-approve" style="background:var(--accent);margin-bottom:.8rem" ${s.baki > 0 ? '' : 'disabled'} onclick="tpOpenReturn('${pid}')"><i class="fa fa-hand-holding-dollar"></i> Tip Do</button>
+        <div class="section-head" style="padding:.4rem 0"><h3><i class="fa fa-gift"></i> Tips mili${tpMonth() ? ' (' + rcEsc(tpMonth()) + ')' : ''} <small>${mt.length}</small></h3></div>
+        ${mt.length ? mt.map(t => `<div class="rcc-row"><span><b>${rcEsc(t.customerName) || 'Customer'}</b>${t.phone ? ' · ' + rcEsc(t.phone) : ''}<small>Order #${rcEsc(t.orderId)} &middot; ${tpWhen(t.ts)}</small><small>${how(t)}</small>${t.items ? '<small>Products: ' + rcEsc(t.items) + '</small>' : ''}</span><b style="color:var(--accent)">₹${t.amount}</b></div>`).join('') : '<div class="rcc-row" style="color:var(--muted)">Is mahine koi tip nahi</div>'}
+        <div class="section-head" style="padding:.8rem 0 .4rem"><h3><i class="fa fa-clock-rotate-left"></i> Tip Return History <small>${s.rets.length}</small></h3></div>
+        ${s.rets.length ? s.rets.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)).map(d => `<div class="rcc-row"><span><b>${tpWhen(d.ts)}</b><small>${rcEsc(d.note) || 'Tip diya'}${d.after != null ? ' &middot; baki bacha ₹' + rcEsc(d.after) : ''}</small></span><b style="color:#1e8a57">₹${rcEsc(d.amount)}</b></div>`).join('') : '<div class="rcc-row" style="color:var(--muted)">Abhi tak koi tip return nahi hui</div>'}
+        ${s.returned > s.rets.reduce((a, r) => a + r.amount, 0) ? '<div class="rcc-row" style="color:var(--muted)">Purane "Diya" mark wali tips: ₹' + Math.round((s.returned - s.rets.reduce((a, r) => a + r.amount, 0)) * 100) / 100 + '</div>' : ''}`;
+      document.getElementById('tip-detail-modal').classList.add('open');
+    }
+    function tpOpenReturn(id) {
+      const r = allRiders.find(z => String(z.partnerId) === String(id)) || { name: rtRiderName(id), partnerId: id }, s = tpStat(id);
+      if (s.baki <= 0) return showToast('Is rider ki koi tip baki nahi hai', 'info');
+      tpActive = id;
+      document.getElementById('tp-modal-info').innerHTML = `<b>${rcEsc(r.name)}</b> (${rcEsc(id)})<br>Baki tip: <b style="color:var(--accent)">₹${s.baki}</b>`;
+      document.getElementById('tp-amt').value = s.baki; document.getElementById('tp-note').value = '';
+      document.getElementById('tip-return-modal').classList.add('open');
+    }
+    function tpFull() { if (tpActive) document.getElementById('tp-amt').value = tpStat(tpActive).baki; }
+    async function tpConfirm() {
+      const id = tpActive; if (!id) return; const s = tpStat(id);
+      const amt = parseFloat(document.getElementById('tp-amt').value), note = document.getElementById('tp-note').value.trim();
+      if (!(amt > 0)) return showToast('Sahi amount daalein', 'error');
+      if (amt > s.baki) return showToast('Baki (₹' + s.baki + ') se zyada tip return nahi kar sakte', 'error');
+      await postToSheet({ action: 'addTipReturn', partnerId: id, amount: amt, note });
+      tpAll.returns.unshift({ partnerId: id, amount: amt, ts: Date.now(), date: '', note: note || 'Tip diya', after: Math.round((s.baki - amt) * 100) / 100 });
+      closeModal('tip-return-modal'); showToast('₹' + amt + ' tip return record ho gayi', 'success');
+      rtRenderTips();
+      const dm = document.getElementById('tip-detail-modal'); if (dm.classList.contains('open')) tpOpen(id);
+      setTimeout(loadTipsAll, 1800);
+    }
+    function rtRenderTipsOld() {
+      const body = document.getElementById('tp-body'), cards = document.getElementById('tp-cards'); if (!body) return;
+      const q = (document.getElementById('tp-search').value || '').trim().toLowerCase();
+      const all = rtData.tips.slice().sort((p, r) => (r.ts || 0) - (p.ts || 0));
+      const sum = f => all.filter(f).reduce((p, t) => p + t.amount, 0);
+      const card = (l, v, c) => '<div style="border:1px solid rgba(128,128,128,.25);border-radius:12px;padding:.65rem .8rem"><div style="font-size:.7rem;color:var(--muted);font-weight:700">' + l + '</div><div style="font-size:1.25rem;font-weight:900;color:' + (c || 'inherit') + '">' + v + '</div></div>';
+      cards.innerHTML = card('Total tips', '₹' + sum(() => true)) + card('UPI tips (store ke paas)', '₹' + sum(t => t.method === 'upi' && t.payTo !== 'rider')) +
+        card('UPI seedha rider ko', '₹' + sum(t => t.method === 'upi' && t.payTo === 'rider')) +
+        card('Rider ko dena baaki', '₹' + sum(t => t.method === 'upi' && t.payTo !== 'rider' && !t.paidToRider), 'var(--danger)') + card('Cash tips (rider ko seedha)', '₹' + sum(t => t.method === 'cash')) +
+        card('Tip dene wale', new Set(all.map(t => t.phone || t.customerName)).size);
+      const list = all.filter(t => !q || (String(t.customerName) + ' ' + t.phone + ' ' + rtRiderName(t.partnerId) + ' ' + t.orderId).toLowerCase().includes(q));
+      body.innerHTML = list.length ? list.map(t => {
+        const when = t.ts ? new Date(+t.ts).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+        const cust = (t.customerName ? '<b>' + rcEsc(t.customerName) + '</b><br>' : '') + '<small>' + rcEsc(t.phone || '') + '</small>';
+        const how = t.method === 'cash' ? '💵 Cash<br><small>rider ko seedha dega</small>' : (t.payTo === 'rider' ? '📱 UPI<br><small>seedha rider ke UPI par (customer ne confirm kiya)</small>' : '📱 UPI<br><small>store ke UPI par (customer ne confirm kiya)</small>');
+        const act = (t.method === 'cash' || t.payTo === 'rider') ? '<small style="color:var(--muted)">—</small>' : (t.paidToRider ? '<small style="color:var(--success)">✓ Diya</small> <button class="btn btn-secondary btn-sm" onclick="setTipPaid(\'' + rcEsc(t.tipId) + '\',false)">Wapas</button>' : '<button class="btn btn-primary btn-sm" onclick="setTipPaid(\'' + rcEsc(t.tipId) + '\',true)">Rider ko de di</button>');
+        return '<tr><td>' + rcEsc(when) + '</td><td>' + cust + '</td><td>' + rcEsc(rtRiderName(t.partnerId) || '—') + '</td><td>#' + rcEsc(t.orderId) + '</td><td><b>₹' + t.amount + '</b></td><td>' + how + '</td><td>' + act + '</td></tr>';
+      }).join('') : '<tr class="loading-row"><td colspan="7">Is mahine koi tip nahi</td></tr>';
+    }
+    let rtUpis = {};
+    async function loadRiderUpis() {
+      try { const r = await fetch(SCRIPT_URL + '?action=getRiderUpis&adminToken=' + encodeURIComponent(adminToken)); const d = await r.json(); rtUpis = {}; (d.upis || []).forEach(u => { rtUpis[String(u.partnerId)] = u; }); } catch (e) { }
+      renderRiderUpis();
+    }
+    function renderRiderUpis() {
+      const b = document.getElementById('ru-body'); if (!b) return;
+      const ids = Array.from(new Set((allRiders || []).map(r => String(r.partnerId)).concat(Object.keys(rtUpis))));
+      const ST = { approved: '<span style="color:var(--success);font-weight:800">✓ Approved</span>', pending: '<span style="color:#d98a00;font-weight:800">⏳ Pending</span>', rejected: '<span style="color:var(--danger);font-weight:800">✗ Rejected</span>' };
+      b.innerHTML = ids.length ? ids.sort((p, q) => ((rtUpis[q] || {}).status === 'pending') - ((rtUpis[p] || {}).status === 'pending')).map(id => {
+        const u = rtUpis[id], q = rcEsc(id);
+        return '<tr><td><b>' + rcEsc(rtRiderName(id)) + '</b><br><small>' + q + '</small></td><td>' + (u ? rcEsc(u.upi) : '<small style="color:var(--muted)">daala nahi</small>') + '</td><td>' + (u ? (ST[u.status] || rcEsc(u.status)) : '—') + '</td><td>' +
+          (u && u.status !== 'approved' ? '<button class="btn btn-primary btn-sm" onclick="riderUpiAction(\'' + q + '\',\'approve\')">Approve</button> ' : '') +
+          (u && u.status === 'pending' ? '<button class="btn btn-secondary btn-sm" onclick="riderUpiAction(\'' + q + '\',\'reject\')">Reject</button> ' : '') +
+          '<button class="btn btn-secondary btn-sm" onclick="riderUpiAction(\'' + q + '\',\'set\')">Set / Badlo</button></td></tr>';
+      }).join('') : '<tr class="loading-row"><td colspan="4">Koi rider nahi</td></tr>';
+    }
+    async function riderUpiAction(pid, act) {
+      const cur = rtUpis[pid] || {};
+      if (act === 'set') {
+        const v = prompt('Rider ka UPI ID (jaise name@upi):', cur.upi || ''); if (v === null) return;
+        const upi = v.trim(); if (!/^[\w.\-]{2,}@[A-Za-z]{2,}$/.test(upi)) return showToast('Sahi UPI ID likhein', 'error');
+        rtUpis[pid] = { partnerId: pid, upi, status: 'approved' }; renderRiderUpis();
+        await postToSheet({ action: 'adminSetRiderUpi', partnerId: pid, upi, name: rtRiderName(pid) }); showToast('UPI ID set ho gaya', 'success'); return;
+      }
+      if (!cur.upi) return;
+      cur.status = act === 'approve' ? 'approved' : 'rejected'; renderRiderUpis();
+      await postToSheet({ action: 'approveRiderUpi', partnerId: pid, approve: act === 'approve' });
+      showToast(act === 'approve' ? 'UPI approve ho gaya' : 'UPI reject kiya', 'success');
+    }
+    async function setTipPaid(id, paid) {
+      const t = rtData.tips.find(x => String(x.tipId) === String(id)); if (!t) return;
+      t.paidToRider = paid; rtRenderTips();
+      await postToSheet({ action: 'setTipPaid', tipId: id, paid: paid });
+      showToast(paid ? 'Tip rider ko di mark ho gayi' : 'Mark hata diya', 'success');
+    }
+    async function setRatingExcluded(id, ex) {
+      const x = rtData.ratings.find(r => String(r.ratingId) === String(id)); if (!x) return;
+      x.excluded = ex; x.excludeReason = ex ? 'Admin: rider ki galti nahi' : ''; rtRender();
+      await postToSheet({ action: 'setRatingExcluded', ratingId: id, excluded: ex, reason: x.excludeReason });
+      showToast(ex ? 'Ye rating count nahi hogi' : 'Ye rating ab count hogi', 'success');
+    }
+    async function rtInit() {
+      const mi = document.getElementById('rt-month'); if (!mi.value) { const d = new Date(); mi.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+      await loadRatingSettings(); loadRatingReport(); loadRiderUpis(); loadTipsAll();
+    }
+
+    async function saveRiderSettings() {
+      const st = { mode: document.getElementById('rc-mode').value, phone: document.getElementById('rc-phone').value.trim(), announce: document.getElementById('rc-announce').value.trim(),
+        rules: document.getElementById('rc-rules').value.split('\n').map(x => x.trim()).filter(Boolean) };
+      RC_NUM.forEach(k => { st[k] = Math.max(0, parseFloat(document.getElementById('rc-' + k).value) || 0); });
+      RC_BOOL.forEach(k => { st[k] = document.getElementById('rc-' + k).checked; });
+      if (st.pct > 100) return showToast('Earning % 100 se zyada nahi ho sakta', 'error');
+      if (st.timeout < 10) return showToast('Accept time kam se kam 10 sec rakhein', 'error');
+      if (st.maxactive < 1) st.maxactive = 1;
+      await postToSheet({ action: 'saveRiderSettings', settings: st });
+      try {
+        await new Promise(r => setTimeout(r, 2500));
+        const vr = await fetch(SCRIPT_URL + '?action=getRiderSettings&adminToken=' + encodeURIComponent(adminToken));
+        const vd = await vr.json();
+        if (!vd.settings || Number(vd.settings.pct) !== st.pct || Number(vd.settings.timeout) !== st.timeout)
+          return showToast('Sheet me save NAHI hua. Dobara login karo, ya Main script ko New version deploy karo', 'error');
+      } catch (e) { }
+      showToast('Rider settings save ho gayi <i class="fa-solid fa-circle-check"></i>', 'success');
+    }
+
+    async function setRiderStatus(id, status) {
+      if (!confirm('Rider ' + id + ' ko "' + status + '" karna hai?')) return;
+
+      await postToSheet({ action: 'updateRiderStatus', partnerId: id, status });
+      showToast('Rider status update ho gaya', 'success');
+      setTimeout(loadRiderPage, 1200);
+    }
+
+    async function riderDeposit(id) {
+      if (rcDemo(id)) return;
+      if (!confirm('Rider ' + id + ' ka pending cash mil gaya? Confirm karein.')) return;
+      await postToSheet({ action: 'confirmRiderDeposit', partnerId: id });
+      showToast('Cash deposit confirm ho gaya', 'success');
+      setTimeout(loadRiderPage, 1200);
+    }
+
     function showPage(page) {
       SoundFX.navSwitch();
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       document.getElementById('page-' + page).classList.add('active');
       document.getElementById('nav-' + page).classList.add('active');
-      const titles = { dashboard: 'Dashboard', orders: 'Orders Management', customers: 'Customers', products: 'Shop Items', settings: 'Settings', spin: 'Spin Wheel Control', offer: 'Special Offer', wishlist: 'Wish List', schedule: 'Schedule Items' };
+      const titles = { rider: 'Rider Control', dashboard: 'Dashboard', orders: 'Orders Management', customers: 'Customers', products: 'Shop Items', settings: 'Settings', spin: 'Spin Wheel Control', offer: 'Special Offer', wishlist: 'Wish List', schedule: 'Schedule Items' };
       document.getElementById('topbar-title').textContent = titles[page] || page;
 
-      if (page === 'orders') { loadOrders(); document.getElementById('nav-orders-badge').textContent = '0'; }
+      if (page === 'orders') { fetchRidersOnce(); loadOrders(); document.getElementById('nav-orders-badge').textContent = '0'; }
       if (page === 'customers') loadCustomers();
       if (page === 'products') loadProducts();
       if (page === 'dashboard') loadDashboard();
@@ -3880,6 +5294,7 @@
       if (page === 'wishlist') loadWishlist();
       if (page === 'schedule') loadScheduleItems();
       if (page === 'settings') loadAppSettingsPage();
+      if (page === 'rider') { const f = document.querySelector('#page-rider .section-card'); if (!document.querySelector('#page-rider .section-card.rc-open')) f.classList.add('rc-open'); rnLoad(); loadRiderPage().then(loadRiderIssues).then(rtInit); }
     }
 
     function toggleSidebar() {
@@ -3927,7 +5342,7 @@
         const res = await fetch(SCRIPT_URL + '?action=getOrders&adminToken=' + encodeURIComponent(adminToken));
         const data = await res.json();
         if (data.orders) {
-          allOrders = data.orders;
+          allOrders = data.orders; applyRiderStatusOverlay();
           renderOrders(allOrders);
           if (!silent) showToast('Orders loaded <i class="fa-solid fa-circle-check"></i>', 'success');
         }
@@ -3938,7 +5353,7 @@
     }
 
     function renderOrders(list) {
-      const statuses = ['Processing', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'];
+      const statuses = ['Processing', 'Confirmed', 'Packed', 'Shipped', 'Out for Delivery', 'Ready for Handover', 'Delivered', 'Cancelled'];
       const tbody = document.getElementById('orders-body');
       if (!list || !list.length) {
         tbody.innerHTML = '<tr class="loading-row"><td colspan="5"><div class="empty-state"><i class="fa fa-box-open"></i><h3>No Orders</h3></div></td></tr>';
@@ -3952,7 +5367,7 @@
       <td><span style="text-transform:uppercase;font-size:.68rem;font-weight:700;color:var(--muted)">${o.payment || '—'}</span></td>
       <td><span class="badge ${sc}">${o.status || 'Processing'}</span></td>
       <td onclick="event.stopPropagation()">
-        <div style="display:flex;gap:.3rem">
+        <div class="ord-acts" style="display:flex;gap:.3rem">
           <button class="btn btn-secondary btn-sm" onclick="openOrderDetail('${o.id}')"><i class="fa fa-circle-dot"></i> Status</button>
           <button class="btn btn-primary btn-sm loc-nav-btn" onclick="openNavigation('', '${String(o.phone).replace(/'/g, "\\'")}')" title="Customer ke ghar navigate karo"><i class="fa fa-diamond-turn-right"></i></button>
         </div>
@@ -3991,7 +5406,7 @@
     }
 
     function statusClass(s) {
-      const map = { processing: 'b-processing', confirmed: 'b-confirmed', shipped: 'b-shipped', 'out for delivery': 'b-outfordelivery', 'out_for_delivery': 'b-outfordelivery', delivered: 'b-delivered', cancelled: 'b-cancelled' };
+      const map = { processing: 'b-processing', confirmed: 'b-confirmed', packed: 'b-confirmed', shipped: 'b-shipped', 'out for delivery': 'b-outfordelivery', 'out_for_delivery': 'b-outfordelivery', 'ready for handover': 'b-outfordelivery', delivered: 'b-delivered', cancelled: 'b-cancelled' };
       return map[(s || '').toLowerCase()] || 'b-processing';
     }
 
@@ -4015,12 +5430,35 @@
       el.classList.toggle('checked');
     }
 
+    // Rider ka live status (rnEvents = Order Requests data, har 25 sec refresh)
+    function orderRiderEvent(order) {
+      return (typeof rnEvents !== 'undefined' ? rnEvents : []).find(e => String(e.orderId) === String(order.id));
+    }
+    function orderRiderHas(order) {
+      const e = orderRiderEvent(order);
+      if (e) { const g = rnGroup(e); return g === 'accepted' || g === 'delivered' || g === 'waiting'; }
+      return /^(offered|assigned|delivered)/i.test(String(order.dispatch || '')) || /^(offered|accepted)/i.test(String(order.riderResp || ''));
+    }
+    function orderRiderLine(order) {
+      const e = orderRiderEvent(order);
+      if (e) {
+        const g = rnGroup(e), nm = rcEsc(e.riderName) || 'Rider';
+        if (g === 'waiting') return nm + ' <small style="color:#c27a00">&middot; Offer bheja, accept ka wait</small>';
+        if (g === 'rejected') return 'Abhi assign nahi hua <small style="color:#d32f2f">&middot; ' + nm + ' ne reject kiya</small>';
+        if (g === 'noresp') return 'Abhi assign nahi hua <small style="color:#c27a00">&middot; ' + nm + ' ne accept nahi kiya</small>';
+        if (g === 'cancelled') return 'Abhi assign nahi hua';
+        const st = g === 'delivered' ? 'Delivered' : (e.orderStatus || 'Accepted');
+        return nm + ' <small style="color:#1e8a57">&middot; ' + rcEsc(st) + '</small>';
+      }
+      if (order.riderResp) return rcEsc(order.riderResp);
+      return 'Abhi assign nahi hua';
+    }
     // Open order detail modal
     function openOrderDetail(orderId) {
       const order = allOrders.find(o => o.id === orderId);
       if (!order) return;
       currentOrderEdit = orderId;
-      const statuses = ['Processing', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'];
+      const statuses = ['Processing', 'Confirmed', 'Packed', 'Shipped', 'Out for Delivery', 'Ready for Handover', 'Delivered', 'Cancelled'];
       const packedSet = getPackedItems(orderId);
       const itemsHtml = Array.isArray(order.items) ? order.items.map((i, idx) =>
         `<tr><td style="padding:.4rem .6rem"><span class="pack-check${packedSet.includes(idx) ? ' checked' : ''}" onclick="togglePackedItem('${orderId}',${idx},this)"><i class="fa fa-check"></i></span>${i.name}</td><td style="padding:.4rem .6rem">${i.qty}</td><td style="padding:.4rem .6rem;color:var(--accent);font-weight:800">₹${i.total || i.price * i.qty || ''}</td></tr>`
@@ -4038,6 +5476,10 @@
         <div>${order.phone || '—'}</div></div>
       <div style="grid-column:1/-1"><div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;margin-bottom:.2rem">Address</div>
         <div style="font-size:.82rem">${order.addr || '—'}</div></div>
+      <div style="grid-column:1/-1"><div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;margin-bottom:.2rem">Delivery Rider</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.6rem .8rem;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface2)">
+          <span style="font-weight:700;font-size:.85rem"><i class="fa fa-motorcycle" style="color:var(--accent)"></i> ${orderRiderLine(order)}</span>
+          <button type="button" class="btn btn-primary btn-sm" onclick="closeModal('order-modal');openAssignRider('${order.id}')">${orderRiderHas(order) ? 'Change' : 'Assign'}</button></div></div>
       ${paymentSettings.currentLocation ? '<div style="grid-column:1/-1"><div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;margin-bottom:.2rem">Live Location (GPS)</div><div style="font-size:.82rem;font-family:\'JetBrains Mono\',monospace">' + (getCustomerLocationByPhone(order.phone) || 'Save nahi hai') + '</div></div>' : ''}
     </div>
     <div style="background:var(--surface2);border-radius:var(--r-sm);overflow:hidden;margin-bottom:1rem">
@@ -4058,8 +5500,8 @@
     </div>
     <div id="status-btn-group" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-top:.5rem">
       ${statuses.map(s => {
-        const icon = s === 'Delivered' ? '<i class="fa-solid fa-circle-check"></i>' : s === 'Cancelled' ? '<i class="fa-solid fa-circle-xmark"></i>' : s === 'Shipped' ? '<i class="fa-solid fa-truck-fast"></i>' : s === 'Confirmed' ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-hourglass-half"></i>';
-        return `<button class="btn btn-secondary btn-sm" onclick="document.querySelectorAll('#status-btn-group .btn').forEach(function(b){b.style.borderColor='';b.style.color='';});this.style.borderColor='var(--accent)';this.style.color='var(--accent)';document.getElementById('modal-status-sel').value='${s}'">${icon} ${s}</button>`;
+        const icon = s === 'Delivered' ? '<i class="fa-solid fa-circle-check"></i>' : s === 'Cancelled' ? '<i class="fa-solid fa-circle-xmark"></i>' : s === 'Shipped' ? '<i class="fa-solid fa-truck-fast"></i>' : s === 'Out for Delivery' ? '<i class="fa-solid fa-motorcycle"></i>' : s === 'Packed' ? '<i class="fa-solid fa-box"></i>' : s === 'Confirmed' ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-hourglass-half"></i>';
+        return `<button class="btn btn-secondary btn-sm" style="${s === order.status ? 'border-color:var(--accent);color:var(--accent)' : ''}" onclick="document.querySelectorAll('#status-btn-group .btn').forEach(function(b){b.style.borderColor='';b.style.color='';});this.style.borderColor='var(--accent)';this.style.color='var(--accent)';document.getElementById('modal-status-sel').value='${s}'">${icon} ${s}</button>`;
       }).join('')}
     </div>`;
       document.getElementById('order-modal').classList.add('open');
@@ -5186,8 +6628,11 @@
       backgroundChatCheck();
       chatBgTimer = setInterval(backgroundChatCheck, 25000);
       setInterval(backgroundRefreshAll, 20000);
+      fetchRidersOnce();
+      setInterval(() => { if (!document.hidden) fetchRidersOnce().then(() => { try { if (document.getElementById('page-rider').classList.contains('active')) { renderRiders(allRiders); rcApplyFilter(); } } catch (e) { } }); }, 30000);
       // Push notification setup
       setTimeout(checkPushStatus, 2000);
+      rnStart();   // rider order requests + "Accept nahi hua" popup
     }
 
     async function backgroundRefreshAll() {

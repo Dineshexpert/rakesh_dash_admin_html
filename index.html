@@ -6999,16 +6999,24 @@ Rakesh Mart ke delivery guidelines follow karna</textarea></div>
         const keyData = await keyRes.json();
         const vapidPublicKey = keyData.publicKey;
 
-        // Existing subscription check karo
+       // Existing subscription check karo
         let subscription = await registration.pushManager.getSubscription();
 
-        if (!subscription) {
-          // Naya subscription banao
-          subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
-          });
+        // Agar purana subscription hai toh pehle unsubscribe karo taaki current VAPID key se fresh subscription bane
+        if (subscription) {
+          try {
+            await subscription.unsubscribe();
+            console.log('Purana mismatched push subscription unsubscribed');
+          } catch (unsubErr) {
+            console.warn('Unsubscribe error:', unsubErr);
+          }
         }
+
+        // Naya fresh subscription banao (current VAPID key ke saath)
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+        });
 
         // Pehle GAS se ek short-lived one-time token lo (admin session se gated)
         const tokRes = await fetch(SCRIPT_URL + '?action=adminGetPushRegToken&adminToken=' + encodeURIComponent(adminToken));
